@@ -21,7 +21,7 @@ export function setup() {
   k9amqp.init(amqpOptions, {channels_per_conn: 1, channel_cache_size: 1})
   exchange.declare(k9amqp, {name: "test.ex", kind: "topic", durable: true})
   exchange.declare(k9amqp, {name: "rcvr.ex", kind: "topic", durable: true})
-  exchange.bind(k9amqp, {destination: "rcvr.ex", key: "test", source: "test.ex"})
+  exchange.bind(k9amqp, {destination: "test.ex", key: "test", source: "rcvr.ex"})
   queue.declare(k9amqp, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
   queue.bind(k9amqp, {name: "test.q", key: "test", exchange: "test.ex"})
 }
@@ -50,6 +50,7 @@ export default function() {
  )
  sleep(.05)
  let msg = k9amqp.get({queue: "test.q", auto_ack: true})
+ msg = k9amqp.get({queue: "test.q", auto_ack: true})
  if (msg) {
   // do smth.
   //console.log(msg)

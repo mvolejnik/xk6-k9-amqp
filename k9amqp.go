@@ -3,51 +3,18 @@ package k9amqp
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.k6.io/k6/js/modules"
+	"go.k6.io/k6/metrics"
 )
 
-type (
-	K9amqp struct {
-		vu     modules.VU
-		client AmqpClient
-		inited bool
-	}
-
-	RootModule     struct{}
-	ModuleInstance struct {
-		vu     modules.VU
-		k9amqp *K9amqp
-	}
-)
-
-var (
-	_ modules.Instance = &ModuleInstance{}
-	_ modules.Module   = &RootModule{}
-)
-
-func New() *RootModule {
-	return &RootModule{}
-}
-
-func (*RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
-	return &ModuleInstance{
-		vu:     vu,
-		k9amqp: &K9amqp{vu: vu},
-	}
-}
-
-func (mi *ModuleInstance) Exports() modules.Exports {
-	return modules.Exports{
-		Default: mi.k9amqp,
-	}
-}
-
-func init() {
-	modules.Register("k6/x/k9amqp", New())
-	modules.Register("k6/x/k9amqp/queue", new(Queue))
-	modules.Register("k6/x/k9amqp/exchange", new(Exchange))
+type K9amqp struct {
+	vu      modules.VU
+	metrics amqpMetrics
+	client  AmqpClient
+	inited  bool
 }
 
 func (k9amqp *K9amqp) Init(amqpOptions AmqpOptions, poolOptions PoolOptions) error {
@@ -65,12 +32,12 @@ func (k9amqp *K9amqp) Teardown() {
 	k9amqp.client.close()
 }
 
-func (k9amqp *K9amqp) Publish(opts PublishOptions, msg amqp.Publishing) error {
+func (k9amqp *K9amqp) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpProduceResponse, error) {
 	var err error
 	channel, err := k9amqp.client.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
-		return err
+		return AmqpProduceResponse{Error: true, ErrorMessage: err.Error()}, err
 	}
 	defer func(err error) {
 		if err == nil {
@@ -86,20 +53,26 @@ func (k9amqp *K9amqp) Publish(opts PublishOptions, msg amqp.Publishing) error {
 		opts.Immediate,
 		msg,
 	)
+	var errMessage string
 	if err != nil {
-		return err
+		errMessage = err.Error()
 	}
-	return nil
+	response := AmqpProduceResponse{Error: err != nil, ErrorMessage: errMessage}
+	k9amqp.reportPublishMetrics(response)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
 }
 
-func (k9amqp *K9amqp) Get(opts GetDeliveryOptions) (amqp.Delivery, error) {
+func (k9amqp *K9amqp) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) {
 	var err error
 	var delivery amqp.Delivery
 	var ok bool
 	channel, err := k9amqp.client.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
-		return amqp.Delivery{}, err
+		return AmqpConsumeResponse{Error: true}, err
 	}
 	defer func(err error) {
 		if err == nil {
@@ -112,8 +85,100 @@ func (k9amqp *K9amqp) Get(opts GetDeliveryOptions) (amqp.Delivery, error) {
 		opts.Queue,
 		opts.AutoAck,
 	)
-	if err != nil || !ok {
-		return amqp.Delivery{}, err
+	var errorMessage string
+	if err != nil {
+		errorMessage = err.Error()
 	}
-	return delivery, nil
+	response := AmqpConsumeResponse{Delivery: delivery, Ok: ok, Error: err != nil, ErrorMessage: errorMessage}
+	k9amqp.reportConsumeMetrics(response)
+	if err != nil || !ok {
+		return AmqpConsumeResponse{Error: true}, err
+	}
+	return response, nil
+}
+
+func (k9amqp *K9amqp) reportPublishMetrics(resp AmqpProduceResponse) error {
+	now := time.Now()
+	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", k9amqp.client.amqpOptions.Username, k9amqp.client.amqpOptions.Host, k9amqp.client.amqpOptions.Port, k9amqp.client.amqpOptions.Vhost))
+	ctx := k9amqp.vu.Context()
+	var sent int
+	var failed int
+	if resp.Error {
+		failed = 1
+	} else {
+		sent = 1
+	}
+	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.PublishSent,
+					Tags:   tags,
+				},
+				Value:    float64(sent),
+				Metadata: ctm.Metadata,
+			},
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.PublishFailed,
+					Tags:   tags,
+				},
+				Value:    float64(failed),
+				Metadata: ctm.Metadata,
+			},
+		},
+	})
+	return nil
+}
+
+func (k9amqp *K9amqp) reportConsumeMetrics(resp AmqpConsumeResponse) error {
+	now := time.Now()
+	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", k9amqp.client.amqpOptions.Username, k9amqp.client.amqpOptions.Host, k9amqp.client.amqpOptions.Port, k9amqp.client.amqpOptions.Vhost))
+	ctx := k9amqp.vu.Context()
+	var received int
+	var noDelivery int
+	var failed int
+	if resp.Ok {
+		received = 1
+	} else if resp.Error {
+		failed = 1
+	} else if !resp.Ok {
+		noDelivery = 1
+	}
+	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeReceived,
+					Tags:   tags,
+				},
+				Value:    float64(received),
+				Metadata: ctm.Metadata,
+			},
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeNoDelivery,
+					Tags:   tags,
+				},
+				Value:    float64(noDelivery),
+				Metadata: ctm.Metadata,
+			},
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeFailed,
+					Tags:   tags,
+				},
+				Value:    float64(failed),
+				Metadata: ctm.Metadata,
+			},
+		},
+	})
+	return nil
 }
