@@ -18,7 +18,7 @@ const amqpOptions = {
 }
 
 export function setup() {
-  k9amqp.init(amqpOptions, {channels_per_conn: 5, channel_cache_size: 1050})
+  k9amqp.init(amqpOptions, {channels_per_conn: 1, channel_cache_size: 1})
   exchange.declare(k9amqp, {name: "test.ex", kind: "topic", durable: true})
   exchange.declare(k9amqp, {name: "rcvr.ex", kind: "topic", durable: true})
   exchange.bind(k9amqp, {destination: "rcvr.ex", key: "test", source: "test.ex"})
@@ -33,6 +33,10 @@ export function teardown(data) {
   exchange.delete(k9amqp, {name: 'test.ex'})
   exchange.delete(k9amqp, {name: 'rcvr.ex'})
   k9amqp.teardown()
+}
+
+{ // TODO Init just once and share between VUs
+  k9amqp.init(amqpOptions, {channels_per_conn: 1, channel_cache_size: 1})
 }
 
 export default function() {
@@ -50,5 +54,4 @@ export default function() {
   // do smth.
   //console.log(msg)
  }
- 
 }

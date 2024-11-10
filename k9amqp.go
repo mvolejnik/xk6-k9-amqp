@@ -8,13 +8,44 @@ import (
 	"go.k6.io/k6/js/modules"
 )
 
-type K9amqp struct {
-	client AmqpClient
-	inited bool
+type (
+	K9amqp struct {
+		vu     modules.VU
+		client AmqpClient
+		inited bool
+	}
+
+	RootModule     struct{}
+	ModuleInstance struct {
+		vu     modules.VU
+		k9amqp *K9amqp
+	}
+)
+
+var (
+	_ modules.Instance = &ModuleInstance{}
+	_ modules.Module   = &RootModule{}
+)
+
+func New() *RootModule {
+	return &RootModule{}
+}
+
+func (*RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
+	return &ModuleInstance{
+		vu:     vu,
+		k9amqp: &K9amqp{vu: vu},
+	}
+}
+
+func (mi *ModuleInstance) Exports() modules.Exports {
+	return modules.Exports{
+		Default: mi.k9amqp,
+	}
 }
 
 func init() {
-	modules.Register("k6/x/k9amqp", new(K9amqp))
+	modules.Register("k6/x/k9amqp", New())
 	modules.Register("k6/x/k9amqp/queue", new(Queue))
 	modules.Register("k6/x/k9amqp/exchange", new(Exchange))
 }
