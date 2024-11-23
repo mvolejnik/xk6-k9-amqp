@@ -3,45 +3,76 @@ package k9amqp
 import (
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
+	"github.com/grafana/sobek"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/metrics"
 )
 
+var amqpClient *AmqpClient
+var once sync.Once
+
 type K9amqp struct {
 	vu      modules.VU
 	metrics amqpMetrics
-	client  AmqpClient
-	inited  bool
 }
 
-func (k9amqp *K9amqp) Init(amqpOptions AmqpOptions, poolOptions PoolOptions) error {
-	slog.Info(fmt.Sprintf("init amqp client with pool %+v\n", poolOptions))
-	k9amqp.client = AmqpClient{amqpOptions: amqpOptions, poolOptions: poolOptions}
-	err := k9amqp.client.init()
-	if err == nil {
-		k9amqp.inited = true
+type Client struct {
+	amqpClient AmqpClient
+	k9amqp     K9amqp
+}
+
+func (k9amqp *K9amqp) XClient(call sobek.ConstructorCall, rt *sobek.Runtime) *sobek.Object {
+	amqpOptions := new(AmqpOptions)
+	poolOptions := new(PoolOptions)
+	if len(call.Arguments) >= 1 {
+		rt.ExportTo(call.Arguments[0], amqpOptions)
 	}
+	if len(call.Arguments) >= 2 {
+		rt.ExportTo(call.Arguments[1], poolOptions)
+	}
+	amqpOptions.init()
+	poolOptions.init()
+	client := &Client{k9amqp: *k9amqp}
+	client.init(*amqpOptions, *poolOptions)
+	return rt.ToValue(client).ToObject(rt)
+}
+
+func (client *Client) getAmqpClient(amqpOptions AmqpOptions, poolOptions PoolOptions) (*AmqpClient, error) {
+	var err error
+	once.Do(func() {
+		slog.Info(fmt.Sprintf("init amqp client with pool %+v\n", poolOptions))
+		amqpClient = &AmqpClient{amqpOptions: amqpOptions, poolOptions: poolOptions}
+		err = amqpClient.init()
+	})
+	return amqpClient, err
+}
+
+func (client *Client) init(amqpOptions AmqpOptions, poolOptions PoolOptions) error {
+	var err error
+	amqpClient, err := client.getAmqpClient(amqpOptions, poolOptions)
+	client.amqpClient = *amqpClient
 	return err
 }
 
-func (k9amqp *K9amqp) Teardown() {
+func (client *Client) Teardown() {
 	slog.Info("Teardown AMQP Client")
-	k9amqp.client.close()
+	client.amqpClient.close()
 }
 
-func (k9amqp *K9amqp) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpProduceResponse, error) {
+func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpProduceResponse, error) {
 	var err error
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return AmqpProduceResponse{Error: true, ErrorMessage: err.Error()}, err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
@@ -58,25 +89,25 @@ func (k9amqp *K9amqp) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 		errMessage = err.Error()
 	}
 	response := AmqpProduceResponse{Error: err != nil, ErrorMessage: errMessage}
-	k9amqp.reportPublishMetrics(response)
+	client.k9amqp.reportPublishMetrics(*client, response)
 	if err != nil {
 		return response, err
 	}
 	return response, nil
 }
 
-func (k9amqp *K9amqp) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) {
+func (client *Client) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) {
 	var err error
 	var delivery amqp.Delivery
 	var ok bool
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return AmqpConsumeResponse{Error: true}, err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
@@ -90,17 +121,17 @@ func (k9amqp *K9amqp) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) 
 		errorMessage = err.Error()
 	}
 	response := AmqpConsumeResponse{Delivery: delivery, Ok: ok, Error: err != nil, ErrorMessage: errorMessage}
-	k9amqp.reportConsumeMetrics(response)
+	client.k9amqp.reportConsumeMetrics(*client, response)
 	if err != nil || !ok {
 		return AmqpConsumeResponse{Error: true}, err
 	}
 	return response, nil
 }
 
-func (k9amqp *K9amqp) reportPublishMetrics(resp AmqpProduceResponse) error {
+func (k9amqp *K9amqp) reportPublishMetrics(client Client, resp AmqpProduceResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
-	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", k9amqp.client.amqpOptions.Username, k9amqp.client.amqpOptions.Host, k9amqp.client.amqpOptions.Port, k9amqp.client.amqpOptions.Vhost))
+	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
 	ctx := k9amqp.vu.Context()
 	var sent int
 	var failed int
@@ -134,10 +165,10 @@ func (k9amqp *K9amqp) reportPublishMetrics(resp AmqpProduceResponse) error {
 	return nil
 }
 
-func (k9amqp *K9amqp) reportConsumeMetrics(resp AmqpConsumeResponse) error {
+func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
-	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", k9amqp.client.amqpOptions.Username, k9amqp.client.amqpOptions.Host, k9amqp.client.amqpOptions.Port, k9amqp.client.amqpOptions.Vhost))
+	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
 	ctx := k9amqp.vu.Context()
 	var received int
 	var noDelivery int

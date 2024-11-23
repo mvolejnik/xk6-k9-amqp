@@ -8,19 +8,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type AmqpOptions struct {
-	Host     string
-	Port     int
-	Vhost    string
-	Username string
-	Password string
-}
-
-type PoolOptions struct {
-	ChannelsPerConn  int
-	ChannelCacheSize int
-}
-
 type AmqpClient struct {
 	amqpOptions AmqpOptions
 	poolOptions PoolOptions
@@ -58,8 +45,8 @@ func (opt *PoolOptions) init() {
 	if opt.ChannelsPerConn <= 0 {
 		opt.ChannelsPerConn = 2
 	}
-	if opt.ChannelCacheSize < 0 {
-		opt.ChannelCacheSize = 1
+	if opt.ChannelsCacheSize < 0 {
+		opt.ChannelsCacheSize = 1
 	}
 }
 
@@ -74,6 +61,7 @@ func (p *AmqpPool) get() (*amqp.Channel, error) {
 		}
 		return channel, nil
 	default:
+		slog.Info("no available channel in pool, creating new one")
 		return p.channel()
 	}
 }
@@ -104,44 +92,44 @@ func (p *AmqpPool) put(channel *amqp.Channel, amqpError error) error {
 	}
 }
 
-func (client *AmqpClient) init() error {
-	client.amqpOptions.init()
-	client.poolOptions.init()
-	if client.poolOptions.ChannelsPerConn == 0 {
-		client.poolOptions.ChannelsPerConn = 2
+func (amqpClient *AmqpClient) init() error {
+	amqpClient.amqpOptions.init()
+	amqpClient.poolOptions.init()
+	if amqpClient.poolOptions.ChannelsPerConn == 0 {
+		amqpClient.poolOptions.ChannelsPerConn = 2
 	}
-	var connSize = client.poolOptions.ChannelCacheSize / client.poolOptions.ChannelsPerConn
+	var connSize = amqpClient.poolOptions.ChannelsCacheSize / amqpClient.poolOptions.ChannelsPerConn
 	if connSize <= 0 {
 		connSize = 1
 	}
 	var connections = make([]*amqp.Connection, connSize)
 	for idx := range connSize {
-		conn, err := client.connect()
+		conn, err := amqpClient.connect()
 		if err != nil {
 			return err
 		}
 		connections[idx] = conn
 	}
-	client.connections = connections
-	client.channels = AmqpPool{
+	amqpClient.connections = connections
+	amqpClient.channels = AmqpPool{
 		connections: connections,
-		pool:        make(chan *amqp.Channel, client.poolOptions.ChannelCacheSize)}
+		pool:        make(chan *amqp.Channel, amqpClient.poolOptions.ChannelsCacheSize)}
 	return nil
 }
 
-func (client *AmqpClient) close() error {
-	for _, conn := range client.connections {
+func (amqpClient *AmqpClient) close() error {
+	for _, conn := range amqpClient.connections {
 		conn.Close()
 	}
 	return nil
 }
 
-func (client *AmqpClient) connect() (*amqp.Connection, error) {
+func (amqpClient *AmqpClient) connect() (*amqp.Connection, error) {
 	amqpConfig := amqp.Config{
-		Vhost:      client.amqpOptions.Vhost,
+		Vhost:      amqpClient.amqpOptions.Vhost,
 		Properties: amqp.NewConnectionProperties(),
 	}
-	var amqpUrl = fmt.Sprintf("amqp://%s:%s@%s:%d", client.amqpOptions.Username, client.amqpOptions.Password, client.amqpOptions.Host, client.amqpOptions.Port)
+	var amqpUrl = fmt.Sprintf("amqp://%s:%s@%s:%d", amqpClient.amqpOptions.Username, amqpClient.amqpOptions.Password, amqpClient.amqpOptions.Host, amqpClient.amqpOptions.Port)
 	conn, err := amqp.DialConfig(amqpUrl, amqpConfig)
 	if err != nil {
 		slog.Error(err.Error())

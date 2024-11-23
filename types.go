@@ -3,12 +3,25 @@ package k9amqp
 import amqp "github.com/rabbitmq/amqp091-go"
 
 type (
+	AmqpOptions struct {
+		Host     string
+		Port     int
+		Vhost    string
+		Username string
+		Password string
+	}
+
+	PoolOptions struct {
+		ChannelsPerConn   int
+		ChannelsCacheSize int
+	}
+
 	Queue struct {
-		client *AmqpClient
+		amqpClient *AmqpClient
 	}
 
 	Exchange struct {
-		client *AmqpClient
+		amqpClient *AmqpClient
 	}
 
 	ExchangeDeclareOptions struct {

@@ -5,19 +5,19 @@ import (
 	"log/slog"
 )
 
-func (queue *Exchange) Declare(k9amqp *K9amqp, opts ExchangeDeclareOptions) error {
+func (queue *Exchange) Declare(client *Client, opts ExchangeDeclareOptions) error {
 	var err error
-	if k9amqp == nil || !k9amqp.inited {
+	if client == nil {
 		return errors.New("required 'k9amqp' parameter missing or not initialized")
 	}
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
@@ -38,19 +38,19 @@ func (queue *Exchange) Declare(k9amqp *K9amqp, opts ExchangeDeclareOptions) erro
 	return nil
 }
 
-func (queue *Exchange) Delete(k9amqp *K9amqp, opts ExchangeDeleteOptions) error {
+func (queue *Exchange) Delete(client *Client, opts ExchangeDeleteOptions) error {
 	var err error
-	if k9amqp == nil || !k9amqp.inited {
+	if client == nil {
 		return errors.New("required 'k9amqp' parameter missing or not initialized")
 	}
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
@@ -67,18 +67,18 @@ func (queue *Exchange) Delete(k9amqp *K9amqp, opts ExchangeDeleteOptions) error 
 	return nil
 }
 
-func (exchange *Exchange) Bind(k9amqp *K9amqp, opts ExchangeBindOptions) error {
-	if k9amqp == nil || !k9amqp.inited {
+func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
+	if client == nil {
 		return errors.New("required 'k9amqp' parameter missing or not initialized")
 	}
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
@@ -94,18 +94,18 @@ func (exchange *Exchange) Bind(k9amqp *K9amqp, opts ExchangeBindOptions) error {
 	return err
 }
 
-func (exchange *Exchange) Unind(k9amqp *K9amqp, opts ExchangeUnbindOptions) error {
-	if k9amqp == nil || !k9amqp.inited {
+func (exchange *Exchange) Unind(client *Client, opts ExchangeUnbindOptions) error {
+	if client == nil {
 		return errors.New("required 'k9amqp' parameter missing or not initialized")
 	}
-	channel, err := k9amqp.client.channels.get()
+	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
 	defer func(err error) {
 		if err == nil {
-			k9amqp.client.channels.put(channel, err)
+			client.amqpClient.channels.put(channel, err)
 		} else {
 			slog.Info("blows channel after error")
 		}
