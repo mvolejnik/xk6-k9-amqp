@@ -64,9 +64,14 @@ type (
 		Args                amqp.Table
 	}
 
-	QueueUnindOptions struct {
+	QueueUnbindOptions struct {
 		Name, Key, Exchange string
 		Args                amqp.Table
+	}
+
+	QueuePurgeOptions struct {
+		Name   string
+		NoWait bool
 	}
 
 	PublishOptions struct {

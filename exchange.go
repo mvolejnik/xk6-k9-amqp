@@ -8,7 +8,7 @@ import (
 func (queue *Exchange) Declare(client *Client, opts ExchangeDeclareOptions) error {
 	var err error
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -41,7 +41,7 @@ func (queue *Exchange) Declare(client *Client, opts ExchangeDeclareOptions) erro
 func (queue *Exchange) Delete(client *Client, opts ExchangeDeleteOptions) error {
 	var err error
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -69,7 +69,7 @@ func (queue *Exchange) Delete(client *Client, opts ExchangeDeleteOptions) error 
 
 func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -96,7 +96,7 @@ func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
 
 func (exchange *Exchange) Unind(client *Client, opts ExchangeUnbindOptions) error {
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
