@@ -4,7 +4,7 @@ import queue from 'k6/x/k9amqp/queue';
 import exchange from 'k6/x/k9amqp/exchange';
 
 export const options = {
-  vus: 1000,
+  vus: 100,
   duration: '30s',
 }
 
@@ -17,8 +17,8 @@ const amqpOptions = {
 }
 
 const poolOptions = {
-  channels_per_conn : __ENV.AMQP_CHANNELS_PER_CONN || 2,
-  channels_cache_size : __ENV.AMQP_CACHE_SIZE || 50,  
+  channels_per_conn : __ENV.AMQP_CHANNELS_PER_CONN || 5,
+  channels_cache_size : __ENV.AMQP_CACHE_SIZE || 50,
 }
 
 const client = new k9amqp.Client(amqpOptions, poolOptions)
@@ -30,13 +30,19 @@ export function setup() {
   exchange.bind(client, {destination: "test.ex", key: "test", source: "rcvr.ex"})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
   queue.bind(client, {name: "test.q", key: "test", exchange: "test.ex"})
+  queue.declare(client, {name: "purge.q", durable: true, args: {"x-message-ttl": 300000}})
+  queue.bind(client, {name: "purge.q", key: "test", exchange: "test.ex"})
 }
 
 export function teardown(data) {
   const client = new k9amqp.Client()
   let q = queue.declare(client, {name: 'test.q', passive: true})
   console.log('queue status: ', q)
+  queue.purge(client, {name: "test.q"})
   queue.delete(client, {name: "test.q"})
+  let x = queue.purge(client, {name: "purge.q"})
+  console.log('Purged messages: ', x);
+  queue.delete(client, {name: "purge.q"})  
   exchange.delete(client, {name: 'test.ex'})
   exchange.delete(client, {name: 'rcvr.ex'})
   client.teardown()

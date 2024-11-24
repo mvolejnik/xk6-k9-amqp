@@ -11,7 +11,7 @@ func (queue *Queue) Declare(client *Client, opts QueueDeclareOptions) (*amqp.Que
 	var err error
 	var amqpQueue amqp.Queue
 	if client == nil {
-		return nil, errors.New("required 'k9amqp' parameter missing or not initialized")
+		return nil, errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -54,7 +54,7 @@ func (queue *Queue) Declare(client *Client, opts QueueDeclareOptions) (*amqp.Que
 func (queue *Queue) Delete(client *Client, opts QueueDeleteOptions) error {
 	var err error
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -83,7 +83,7 @@ func (queue *Queue) Delete(client *Client, opts QueueDeleteOptions) error {
 
 func (queue *Queue) Bind(client *Client, opts QueueBindOptions) error {
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -108,9 +108,9 @@ func (queue *Queue) Bind(client *Client, opts QueueBindOptions) error {
 	return err
 }
 
-func (queue *Queue) Unbind(client *Client, opts QueueBindOptions) error {
+func (queue *Queue) Unbind(client *Client, opts QueueUnbindOptions) error {
 	if client == nil {
-		return errors.New("required 'k9amqp' parameter missing or not initialized")
+		return errors.New("required 'client' parameter missing")
 	}
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
@@ -124,13 +124,36 @@ func (queue *Queue) Unbind(client *Client, opts QueueBindOptions) error {
 			slog.Info("blows channel after error")
 		}
 	}(err)
-	err = channel.QueueBind(
+	err = channel.QueueUnbind(
 		opts.Name,
 		opts.Key,
 		opts.Exchange,
-		opts.NoWait,
 		opts.Args,
 	)
 	slog.Info("qeuue unbinded", "name", opts.Name, "key", opts.Key)
 	return err
+}
+
+func (queue *Queue) Purge(client *Client, opts QueuePurgeOptions) (int, error) {
+	if client == nil {
+		return 0, errors.New("required 'client' parameter missing")
+	}
+	channel, err := client.amqpClient.channels.get()
+	if err != nil {
+		slog.Error("unable to get amqp channel")
+		return 0, err
+	}
+	defer func(err error) {
+		if err == nil {
+			client.amqpClient.channels.put(channel, err)
+		} else {
+			slog.Info("blows channel after error")
+		}
+	}(err)
+	count, err := channel.QueuePurge(
+		opts.Name,
+		opts.NoWait,
+	)
+	slog.Info("qeuue purged", "name", opts.Name, "messages", count)
+	return count, err
 }

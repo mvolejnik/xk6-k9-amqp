@@ -45,7 +45,7 @@ const client = new k9amqp.Client(amqpOptions, poolOptions)
 
 export function setup() {
   // Gets already inited K9 AMQP Client
-  const client = new k9amqp.Client()
+  const client = new k9amqp.Client(amqpOptions, poolOptions)
   // Creates 'test.ex' exchange, 'test.q' queue and binds the queue to the exchange using 'test' routing key
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
