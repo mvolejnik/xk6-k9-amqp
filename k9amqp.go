@@ -3,6 +3,7 @@ package k9amqp
 import (
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -14,6 +15,10 @@ import (
 
 var amqpClient *AmqpClient
 var once sync.Once
+
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type K9amqp struct {
 	vu      modules.VU
@@ -96,14 +101,14 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 	return response, nil
 }
 
-func (client *Client) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) {
+func (client *Client) Get(opts GetOptions) (AmqpGetResponse, error) {
 	var err error
 	var delivery amqp.Delivery
 	var ok bool
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
-		return AmqpConsumeResponse{Error: true}, err
+		return AmqpGetResponse{Error: true}, err
 	}
 	defer func(err error) {
 		if err == nil {
@@ -120,10 +125,62 @@ func (client *Client) Get(opts GetDeliveryOptions) (AmqpConsumeResponse, error) 
 	if err != nil {
 		errorMessage = err.Error()
 	}
-	response := AmqpConsumeResponse{Delivery: delivery, Ok: ok, Error: err != nil, ErrorMessage: errorMessage}
-	client.k9amqp.reportConsumeMetrics(*client, response)
+	response := AmqpGetResponse{Delivery: delivery, Ok: ok, Error: err != nil, ErrorMessage: errorMessage}
+	client.k9amqp.reportGetMetrics(*client, response)
 	if err != nil || !ok {
+		return response, err
+	}
+	return response, nil
+}
+
+func (client *Client) Consume(opts ConsumeOptions) (AmqpConsumeResponse, error) {
+	var err error
+	var consumerTag = randString(10)
+	deliveries := []amqp.Delivery{}
+	channel, err := client.amqpClient.channels.get()
+	if err != nil {
+		slog.Error("unable to get amqp channel")
 		return AmqpConsumeResponse{Error: true}, err
+	}
+	defer func(err error) {
+		channel.Cancel(consumerTag, opts.NoWait)
+		if err == nil {
+			client.amqpClient.channels.put(channel, err)
+		} else {
+			slog.Info("blows channel after error")
+		}
+	}(err)
+	amqpChannel, err := channel.Consume(
+		opts.Queue,
+		consumerTag,
+		opts.AutoAck,
+		opts.Exclusive,
+		opts.NoLocal,
+		opts.NoWait,
+		opts.Args,
+	)
+	var loop = true
+	for range opts.Size {
+		select {
+		case d, ok := <-amqpChannel:
+			if ok {
+				deliveries = append(deliveries, d)
+			}
+		default:
+			loop = false
+		}
+		if !loop {
+			break
+		}
+	}
+	var errorMessage string
+	if err != nil {
+		errorMessage = err.Error()
+	}
+	response := AmqpConsumeResponse{Deliveries: deliveries, Ok: len(deliveries) > 0, Error: err != nil, ErrorMessage: errorMessage}
+	client.k9amqp.reportConsumeMetrics(*client, response)
+	if err != nil || len(deliveries) == 0 {
+		return response, err
 	}
 	return response, nil
 }
@@ -165,7 +222,7 @@ func (k9amqp *K9amqp) reportPublishMetrics(client Client, resp AmqpProduceRespon
 	return nil
 }
 
-func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeResponse) error {
+func (k9amqp *K9amqp) reportGetMetrics(client Client, resp AmqpGetResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
@@ -212,4 +269,59 @@ func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeRespon
 		},
 	})
 	return nil
+}
+
+func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeResponse) error {
+	now := time.Now()
+	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
+	ctx := k9amqp.vu.Context()
+	var noDelivery int
+	var failed int
+	received := len(resp.Deliveries)
+	if resp.Error {
+		failed = 1
+	} else if !resp.Ok {
+		noDelivery = 1
+	}
+	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeReceived,
+					Tags:   tags,
+				},
+				Value:    float64(received),
+				Metadata: ctm.Metadata,
+			},
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeNoDelivery,
+					Tags:   tags,
+				},
+				Value:    float64(noDelivery),
+				Metadata: ctm.Metadata,
+			},
+			{
+				Time: now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: k9amqp.metrics.ConsumeFailed,
+					Tags:   tags,
+				},
+				Value:    float64(failed),
+				Metadata: ctm.Metadata,
+			},
+		},
+	})
+	return nil
+}
+
+func randString(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }
