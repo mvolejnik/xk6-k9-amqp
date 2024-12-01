@@ -28,9 +28,9 @@ export function setup() {
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   exchange.declare(client, {name: "rcvr.ex", kind: "topic", durable: true})
   exchange.bind(client, {destination: "test.ex", key: "test", source: "rcvr.ex"})
-  queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
+  queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 3600000}})
   queue.bind(client, {name: "test.q", key: "test", exchange: "test.ex"})
-  queue.declare(client, {name: "purge.q", durable: true, args: {"x-message-ttl": 300000}})
+  queue.declare(client, {name: "purge.q", durable: true, args: {"x-message-ttl": 3600000}})
   queue.bind(client, {name: "purge.q", key: "test", exchange: "test.ex"})
 }
 

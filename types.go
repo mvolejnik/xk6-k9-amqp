@@ -79,9 +79,19 @@ type (
 		Mandatory, Immediate bool
 	}
 
-	GetDeliveryOptions struct {
+	GetOptions struct {
 		Queue   string
 		AutoAck bool
+	}
+
+	ConsumeOptions struct {
+		Queue     string
+		AutoAck   bool
+		Exclusive bool
+		NoLocal   bool
+		NoWait    bool
+		Args      amqp.Table
+		Size      int
 	}
 
 	AmqpProduceResponse struct {
@@ -89,8 +99,15 @@ type (
 		ErrorMessage string
 	}
 
-	AmqpConsumeResponse struct {
+	AmqpGetResponse struct {
 		Delivery     amqp.Delivery
+		Ok           bool
+		Error        bool
+		ErrorMessage string
+	}
+
+	AmqpConsumeResponse struct {
+		Deliveries   []amqp.Delivery
 		Ok           bool
 		Error        bool
 		ErrorMessage string
