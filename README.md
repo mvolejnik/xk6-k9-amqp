@@ -14,7 +14,7 @@
 
 "K6 K9 AMQP" - it's a pun. K6 for Grafana K6 testing tool, K-9 for Canine/(police) dog. K6 and K-9, both makes world a better place to live in. Even not noticing what happen when a dog see a rabbit...
 
-### Simple Example
+### Simple Sample
 
 ```javascript
 import { sleep } from 'k6';
@@ -119,11 +119,54 @@ Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amq
 
 ```
 
-### Run Simple Example
+### Run RqbbitMQ
+
+```
+sudo docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+Unable to find image 'rabbitmq:3-management' locally
+3-management: Pulling from library/rabbitmq
+0622fac788ed: Already exists 
+6926ed160d39: Pull complete 
+6c42ae7d1a2d: Pull complete 
+261d4b178df4: Pull complete 
+6fd08a40d273: Pull complete 
+199259066d28: Pull complete 
+fed2c5809243: Pull complete 
+953b81faf3db: Pull complete 
+f775e99f7f42: Pull complete 
+c3abc98a719c: Pull complete 
+Digest: sha256:9d984edac52ffeea602dd20e28b752394597ad214dcce5f66c1bd45700c8f296
+Status: Downloaded newer image for rabbitmq:3-management
+=INFO REPORT==== 24-May-2025::08:20:31.632035 ===
+    alarm_handler: {set,{system_memory_high_watermark,[]}}
+2025-05-24 08:20:33.853573+00:00 [notice] <0.44.0> Application syslog exited with reason: stopped
+2025-05-24 08:20:33.857921+00:00 [notice] <0.254.0> Logging: switching to configured handler(s); following messages may not be visible in this log output
+2025-05-24 08:20:33.858542+00:00 [notice] <0.254.0> Logging: configured log handlers are now ACTIVE
+...
+2025-05-24 08:20:38.761939+00:00 [info] <0.754.0> Management plugin: HTTP (non-TLS) listener started on port 15672
+2025-05-24 08:20:38.762206+00:00 [info] <0.784.0> Statistics database started.
+2025-05-24 08:20:38.762350+00:00 [info] <0.783.0> Starting worker pool 'management_worker_pool' with 3 processes in it
+2025-05-24 08:20:38.775540+00:00 [info] <0.802.0> Prometheus metrics: HTTP (non-TLS) listener started on port 15692
+2025-05-24 08:20:38.775714+00:00 [info] <0.688.0> Ready to start client connection listeners
+2025-05-24 08:20:38.777524+00:00 [info] <0.846.0> started TCP listener on [::]:5672
+ completed with 5 plugins.
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0> Server startup complete; 5 plugins started.
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0>  * rabbitmq_prometheus
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0>  * rabbitmq_federation
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0>  * rabbitmq_management
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0>  * rabbitmq_management_agent
+2025-05-24 08:20:38.854097+00:00 [info] <0.688.0>  * rabbitmq_web_dispatch
+2025-05-24 08:20:38.966514+00:00 [info] <0.9.0> Time to start RabbitMQ: 7407 ms
+2025-05-24 08:21:38.739619+00:00 [info] <0.900.0> Waiting for Mnesia tables for 30000 ms, 9 retries left
+2025-05-24 08:21:38.739748+00:00 [info] <0.900.0> Successfully synced tables from a peer
+```
+
+### Run Simple Sample
 
 
 ```
-$ ./k6 run examples/simple.js 
+$ ./k6 run samples/simple.js 
 
          /\      Grafana   /‾‾/  
     /\  /  \     |\  __   /  /   
@@ -133,7 +176,7 @@ $ ./k6 run examples/simple.js
 
 INFO[0000] 2024/11/23 21:41:45 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10} 
      execution: local
-        script: examples/simple.js
+        script: samples/simple.js
         output: -
 
      scenarios: (100.00%) 1 scenario, 10 max VUs, 1m0s max duration (incl. graceful stop):

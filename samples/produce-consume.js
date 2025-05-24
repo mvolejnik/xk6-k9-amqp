@@ -1,7 +1,7 @@
-import { sleep } from 'k6';
 import k9amqp from 'k6/x/k9amqp';
 import queue from 'k6/x/k9amqp/queue';
 import exchange from 'k6/x/k9amqp/exchange';
+import { fail } from 'k6';
 
 export const options = {
   scenarios: {
