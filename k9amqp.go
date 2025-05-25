@@ -70,6 +70,7 @@ func (client *Client) Teardown() {
 
 func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpProduceResponse, error) {
 	var err error
+	var duration time.Duration
 	channel, err := client.amqpClient.channels.get()
 	if err != nil {
 		slog.Error("unable to get amqp channel")
@@ -82,6 +83,21 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 			slog.Info("blows channel after error")
 		}
 	}(err)
+	err, duration = client.publish(err, channel, opts, msg)
+	var errMessage string
+	if err != nil {
+		errMessage = err.Error()
+	}
+	response := AmqpProduceResponse{Error: err != nil, ErrorMessage: errMessage}
+	client.k9amqp.reportPublishMetrics(*client, opts, response, duration)
+	if err != nil {
+		return response, err
+	}
+	return response, nil
+}
+
+func (*Client) publish(err error, channel *amqp.Channel, opts PublishOptions, msg amqp.Publishing) (error, time.Duration) {
+	startTime := time.Now()
 	err = channel.Publish(
 		opts.Exchange,
 		opts.Key,
@@ -89,16 +105,8 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 		opts.Immediate,
 		msg,
 	)
-	var errMessage string
-	if err != nil {
-		errMessage = err.Error()
-	}
-	response := AmqpProduceResponse{Error: err != nil, ErrorMessage: errMessage}
-	client.k9amqp.reportPublishMetrics(*client, response)
-	if err != nil {
-		return response, err
-	}
-	return response, nil
+	duration := time.Since(startTime)
+	return err, duration
 }
 
 func (client *Client) Get(opts GetOptions) (AmqpGetResponse, error) {
@@ -185,10 +193,12 @@ func (client *Client) Consume(opts ConsumeOptions) (AmqpConsumeResponse, error) 
 	return response, nil
 }
 
-func (k9amqp *K9amqp) reportPublishMetrics(client Client, resp AmqpProduceResponse) error {
+func (k9amqp *K9amqp) reportPublishMetrics(client Client, opts PublishOptions, resp AmqpProduceResponse, duration time.Duration) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
+	tags = tags.With("exchange", opts.Exchange)
+	tags = tags.With("routing_key", opts.Key)
 	ctx := k9amqp.vu.Context()
 	var sent int
 	var failed int
@@ -227,6 +237,7 @@ func (k9amqp *K9amqp) reportGetMetrics(client Client, resp AmqpGetResponse) erro
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
 	ctx := k9amqp.vu.Context()
+	tags = k9amqp.metricsTags(tags, &resp.Delivery)
 	var received int
 	var noDelivery int
 	var failed int
@@ -274,7 +285,12 @@ func (k9amqp *K9amqp) reportGetMetrics(client Client, resp AmqpGetResponse) erro
 func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	var delivery *amqp.Delivery
+	if len(resp.Deliveries) > 0 {
+		delivery = &resp.Deliveries[0]
+	}
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
+	tags = k9amqp.metricsTags(tags, delivery)
 	ctx := k9amqp.vu.Context()
 	var noDelivery int
 	var failed int
@@ -324,4 +340,24 @@ func randString(length int) string {
 		b[i] = charset[seededRand.Intn(len(charset))]
 	}
 	return string(b)
+}
+
+func (k9amqp *K9amqp) scenario() (*string, bool) {
+	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	if scenario, ok := ctm.Tags.Get("scenario"); ok {
+		return &scenario, true
+	}
+	return nil, false
+}
+
+func (k9amqp *K9amqp) metricsTags(tags *metrics.TagSet, delivery *amqp.Delivery) *metrics.TagSet {
+	scenario, scenaried := k9amqp.scenario()
+	if scenaried {
+		tags = tags.With("scenario", *scenario)
+	}
+	if delivery != nil {
+		tags = tags.With("exchange", delivery.Exchange)
+		tags = tags.With("routing_key", delivery.RoutingKey)
+	}
+	return tags
 }
