@@ -1,0 +1,50 @@
+ 
+name: xk6-k9-amqp build
+
+on:
+  workflow_dispatch:
+    inputs:
+      k6_version:
+        description: 'k6 version to build with xk6'
+        required: false
+        default: 'v1.1.0'
+        type: string
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: [ "master" ]
+    types:
+      - opened
+      - synchronize
+      - ready_for_review
+  schedule:
+    - cron: '? 7 * * 4'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Set k6 version
+        id: set_k6_version # Give this step an ID to reference its output
+        run: |
+          K6_VERSION="${{ github.event.inputs.k6_version || 'v1.1.0' }}"
+          echo "Using k6 version: $K6_VERSION"
+          echo "k6_version_output=$K6_VERSION" >> "$GITHUB_OUTPUT"
+      - name: test
+        run: |
+          echo ${{ steps.set_k6_version.outputs.k6_version_output }}
+      - name: xk6 build with k9-amqp extension
+        run: >
+          docker run 
+          --rm 
+          -v "${PWD}:/github/workspace" 
+          -w /github/workspace 
+          -u $(id -u):$(id -g) 
+          grafana/xk6:1.0.1 
+          build ${{ steps.set_k6_version.outputs.k6_version_output }} --with github.com/mvolejnik/xk6-k9-amqp@v0.0.4
+      - name: Verify k6 binary exists
+        run: |
+          ls -l k6
+          ./k6 version
