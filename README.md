@@ -12,7 +12,27 @@
 
 [K6](https://k6.io/) extension for AMQP 0-9-1 / [RabbitMQ](https://www.rabbitmq.com/) uses RabbitMQ [GoLang client library](https://github.com/rabbitmq/amqp091-go).
 
-"K6 K9 AMQP" - it's a pun. K6 for Grafana K6 testing tool, K-9 for Canine/(police) dog. K6 and K-9, both makes world a better place to live in. Even not noticing what happen when a dog see a rabbit...
+"K6 K9 AMQP" - it's a pun. K6 for Grafana K6 testing tool, K-9 for Canine/(police) dog. K6 and K-9, both make world a better place to live in. Even not noticing what happen when a dog see a rabbit...
+
+### Why another AMQP extension?
+
+There is [Grafana xk6-amqp extensions](https://github.com/grafana/xk6-amqp), but...
+
+- it's deprecated
+- causes [Hiigh Channel Churn](https://www.rabbitmq.com/docs/channels#monitoring) rate due to openning new channel for every message being published
+- no connection pool support (connection per VU is possible, but even so it might be too many in complex scenarios)
+
+### Links
+
+How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote write](Prometheus.md)
+
+### K6 version compatibility
+
+Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
+
+- v1.1.0
+- v1.0.0
+- v0.59.0
 
 ### Simple Sample
 
@@ -81,6 +101,43 @@ export default function() {
 ```
 
 ### Build K6 with K9 AMQP extension
+
+```
+$ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.4
+
+2025/06/22 10:52:49 INFO Building k6
+2025/06/22 10:52:49 INFO Building new k6 binary (native)
+2025/06/22 10:52:49 INFO Initializing Go module
+go: creating new go.mod: module k6
+2025/06/22 10:52:49 INFO Creating k6 main
+2025/06/22 10:52:49 INFO adding dependency go.k6.io/k6@latest
+go: finding module for package github.com/fsnotify/fsnotify
+go: finding module for package gopkg.in/tomb.v1
+go: found gopkg.in/tomb.v1 in gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.9.0
+2025/06/22 10:52:49 INFO importing extensions
+2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.4
+go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.4
+2025/06/22 10:53:08 INFO Building k6
+2025/06/22 10:53:15 INFO Build complete
+2025/06/22 10:53:15 INFO Cleaning up work directory /tmp/k6foundry1730656898
+
+xk6 has now produced a new k6 binary which may be different than the command on your system path!
+Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/tmp/k6' directory.
+```
+
+Verify:
+```
+$ ./k6 --version
+k6 v1.0.0 (go1.24.3, linux/amd64)
+Extensions:
+  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp/exchange [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp/queue [js]
+```
+
+
+### Build K6 with K9 AMQP extension locally
 `go build .` used in development as fast compilation for syntax errors as it's way faster than `xk6 build...`.
 
 ```
@@ -166,7 +223,7 @@ Status: Downloaded newer image for rabbitmq:3-management
 
 
 ```
-$ ./k6 run samples/simple.js 
+$ ./k6 run examples/simple.js 
 
          /\      Grafana   /‾‾/  
     /\  /  \     |\  __   /  /   
@@ -176,7 +233,7 @@ $ ./k6 run samples/simple.js
 
 INFO[0000] 2024/11/23 21:41:45 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10} 
      execution: local
-        script: samples/simple.js
+        script: examples/simple.js
         output: -
 
      scenarios: (100.00%) 1 scenario, 10 max VUs, 1m0s max duration (incl. graceful stop):
@@ -216,3 +273,11 @@ running (0m30.1s), 00/10 VUs, 5750 complete and 0 interrupted iterations
 default ✓ [======================================] 10 VUs  30s
 
 ```
+
+## K6 Extension Registry Requirements
+
+- ✅ a [README](./README.md) file - project description, build and usage instructions, as well as k6 version compatibility. The goal is to provide enough information to quickly and easily evaluate the extension.
+- ❌ the xk6 topic set (not ready for this yet)
+- ✅ a [non-restrictive](./LICENSE) license
+- ✅ an [examples](./examples/) folder with examples
+- ✅ at least one versioned [release](https://github.com/mvolejnik/xk6-k9-amqp/releases)
