@@ -32,9 +32,6 @@ jobs:
           K6_VERSION="${{ github.event.inputs.k6_version || 'v1.1.0' }}"
           echo "Using k6 version: $K6_VERSION"
           echo "k6_version_output=$K6_VERSION" >> "$GITHUB_OUTPUT"
-      - name: test
-        run: |
-          echo ${{ steps.set_k6_version.outputs.k6_version_output }}
       - name: xk6 build with k9-amqp extension
         run: >
           docker run 
