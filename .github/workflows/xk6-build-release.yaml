@@ -1,0 +1,52 @@
+name: xk6-k9-amqp release build
+
+# Builds specify version of k6 with xk6-k9-amqp extension using specify version of xk6
+
+env:
+  XK6_VERSION: "1.0.1"
+on:
+  workflow_dispatch:
+    inputs:
+      k6_version:
+        description: 'k6 version to build with xk6'
+        required: false
+        default: 'v1.1.0'
+        type: string
+      k9_amqp_version:
+        description: 'xk6-k9-amqp version to build with xk6'
+        required: false
+        default: 'v0.0.4'
+        type: string
+  schedule:
+    - cron: '? 7 * * 4'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Set k6 version
+        id: k6_version # Give this step an ID to reference its output
+        run: |
+          K6_VERSION="${{ github.event.inputs.k6_version || 'v1.1.0' }}"
+          echo "Using k6 version: $K6_VERSION"
+          echo "version=$K6_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Set k9-amqp version
+        id: k9_amqp_version # Give this step an ID to reference its output
+        run: |
+          K9_AMQP_VERSION="${{ github.event.inputs.k9_amqp_version || 'v0.0.4' }}"
+          echo "Building xk6-k9-amqp version: $K9_AMQP_VERSION"
+          echo "version=$K9_AMQP_VERSION" >> "$GITHUB_OUTPUT"
+      - name: xk6 build with k9-amqp extension
+        run: >
+          docker run 
+          --rm 
+          -v "${PWD}:/github/workspace" 
+          -w /github/workspace 
+          -u $(id -u):$(id -g) 
+          grafana/xk6:${XK6_VERSION}
+          build ${{ steps.k6_version.outputs.version }} --with github.com/mvolejnik/xk6-k9-amqp@${{ steps.k9_amqp_version.outputs.version }}
+      - name: Verify k6 binary exists
+        run: |
+          ls -l k6
+          ./k6 version
