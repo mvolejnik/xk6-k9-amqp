@@ -20,15 +20,10 @@ services:
       start_period: 7s
   k6:
     container_name: k6
-    image: k6:${TAG}
-    build:
-      context: .
-      dockerfile: Dockerfile.k6
+    image: mvolejnik/k6-with-amqp
     hostname: k6
     networks:
       - k6
-    environment:
-      AMQP_HOST: rabbitmq
     volumes:
       - type: bind
         source: ./simple.js
@@ -36,9 +31,7 @@ services:
       - type: bind
         source: ./produce-consume.js
         target: /home/k6/produce-consume.js
-      - type: bind
-        source: ./combined.js
-        target: /home/k6/combined.js
+    command: "run produce-consume.js"
     depends_on:
       rabbitmq:
         condition: service_healthy

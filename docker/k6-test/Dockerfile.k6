@@ -1,0 +1,6 @@
+FROM grafana/k6:1.1.0
+
+COPY --chmod=0555 ./k6 /usr/bin/k6
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]
+
