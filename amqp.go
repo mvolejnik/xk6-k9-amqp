@@ -104,7 +104,7 @@ func (amqpClient *AmqpClient) init() error {
 	}
 	var connections = make([]*amqp.Connection, connSize)
 	for idx := range connSize {
-		conn, err := amqpClient.connect()
+		conn, err := amqpClient.Connect()
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func (amqpClient *AmqpClient) close() error {
 	return nil
 }
 
-func (amqpClient *AmqpClient) connect() (*amqp.Connection, error) {
+func (amqpClient *AmqpClient) Connect() (*amqp.Connection, error) {
 	amqpConfig := amqp.Config{
 		Vhost:      amqpClient.amqpOptions.Vhost,
 		Properties: amqp.NewConnectionProperties(),

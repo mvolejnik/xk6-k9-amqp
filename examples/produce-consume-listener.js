@@ -1,7 +1,8 @@
 import k9amqp from 'k6/x/k9amqp';
 import queue from 'k6/x/k9amqp/queue';
 import exchange from 'k6/x/k9amqp/exchange';
-import { fail } from 'k6';
+import { vu } from 'k6/execution';
+import { fail, sleep } from 'k6';
 
 export const options = {
   scenarios: {
@@ -15,17 +16,15 @@ export const options = {
       exec: 'produce'
     },
     consume: {
-      executor: 'constant-arrival-rate',
-      duration: '1m',
-      startTime: '10s',
-      rate: 100,
-      timeUnit: '1m',
-      preAllocatedVUs: 5,
-      maxVUs: 10,
+      executor: 'constant-vus',
+      vus: 2,
+      duration: '1m10s',
       exec: 'consume'
     },
   },
 }
+
+const consumeDuration = options.scenarios.consume.duration
 
 const amqpOptions = {
   host : __ENV.AMQP_HOST || "localhost",
@@ -42,6 +41,12 @@ const poolOptions = {
 
 // Inits K9 AMQP Client
 const client = new k9amqp.Client(amqpOptions, poolOptions)
+
+const unitMap = {
+  h: 3600,
+  m: 60,
+  s: 1,
+};
 
 export function setup() {
   // Gets already inited K9 AMQP Client
@@ -77,9 +82,27 @@ export function produce() {
 }
 
 export function consume() {
-  let consumed = client.consume({queue: "test.q", auto_ack: true, size: 1});
-  if (consumed && consumed.deliveries.length > 0) {
-   // do smth.
-   //console.log(consumed.deliveries.length);
-  } 
+  let c = 0;
+  const listener = function(data) {
+    c++;
+    // do smth.
+   }
+  client.listen({queue: "test.q", auto_ack: true}, listener);
+  sleep(toSeconds(consumeDuration));
+  console.log(`Consumer [${vu.idInTest}] consumed ${c} messages`)
+}
+
+function toSeconds(duration) {
+  if (!duration || typeof duration !== 'string') {
+    return 0;
+  }
+  const regex = /(\d+)([hms])/g;
+  let totalSeconds = 0;
+  const matches = duration.matchAll(regex);
+  for (const match of matches) {
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    totalSeconds += value * unitMap[unit];
+  }
+  return totalSeconds;
 }
