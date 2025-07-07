@@ -193,6 +193,48 @@ func (client *Client) Consume(opts ConsumeOptions) (AmqpConsumeResponse, error) 
 	return response, nil
 }
 
+func (client *Client) Listen(opts ListenOptions, listener ListenerType) error {
+	var err error
+	var consumerTag = randString(10)
+	conn, err := client.amqpClient.Connect()
+	if err != nil {
+		slog.Error("unable to get amqp connection")
+		return err
+	}
+	channel, err := conn.Channel()
+	if err != nil {
+		slog.Error("unable to get amqp channel")
+		return err
+	}
+	amqpChannel, err := channel.Consume(
+		opts.Queue,
+		consumerTag,
+		opts.AutoAck,
+		opts.Exclusive,
+		opts.NoLocal,
+		opts.NoWait,
+		opts.Args,
+	)
+
+	go func() {
+		defer func(err error) {
+			channel.Cancel(consumerTag, opts.NoWait)
+			if err != nil {
+				slog.Error(err.Error())
+			}
+			conn.Close()
+		}(err)
+		for d := range amqpChannel {
+			err = listener(d)
+			if err != nil {
+				slog.Error(fmt.Sprintf("%s (Listen)", err.Error()))
+				return
+			}
+		}
+	}()
+	return err
+}
+
 func (k9amqp *K9amqp) reportPublishMetrics(client Client, opts PublishOptions, resp AmqpProduceResponse, duration time.Duration) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()

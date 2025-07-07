@@ -112,4 +112,15 @@ type (
 		Error        bool
 		ErrorMessage string
 	}
+
+	ListenerType func(amqp.Delivery) error
+
+	ListenOptions struct {
+		Queue     string
+		AutoAck   bool
+		Exclusive bool
+		NoLocal   bool
+		NoWait    bool
+		Args      amqp.Table
+	}
 )
