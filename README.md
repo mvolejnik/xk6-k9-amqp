@@ -1,5 +1,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/releases)
 [![GitHub CI Workflow](https://img.shields.io/github/actions/workflow/status/mvolejnik/xk6-k9-amqp/build.yaml?branch=master&style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/actions/workflows/build.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://goreportcard.com/report/github.com/mvolejnik/xk6-k9-amqp)
+[![GitHub License](https://img.shields.io/github/license/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/blob/master/LICENSE)
 
 # xk6-k9-amqp
 
@@ -17,7 +19,7 @@
 
 "K6 K9 AMQP" - it's a pun. K6 for Grafana K6 testing tool, K-9 for Canine/(police) dog. K6 and K-9, both make world a better place to live in. Even not noticing what happen when a dog see a rabbit...
 
-### Why another AMQP extension?
+## Why another AMQP extension?
 
 There is [Grafana xk6-amqp extensions](https://github.com/grafana/xk6-amqp), but...
 
@@ -25,11 +27,11 @@ There is [Grafana xk6-amqp extensions](https://github.com/grafana/xk6-amqp), but
 - causes [Hiigh Channel Churn](https://www.rabbitmq.com/docs/channels#monitoring) rate due to openning new channel for every message being published
 - no connection pool support (connection per VU is possible, but even so it might be too many in complex scenarios)
 
-### Links
+## Links
 
 How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote write](Prometheus.md)
 
-### K6 version compatibility
+## K6 version compatibility
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
 
@@ -46,7 +48,7 @@ Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=
 - ✅ an [examples](./examples/) folder with examples
 - ✅ at least one versioned [release](https://github.com/mvolejnik/xk6-k9-amqp/releases)
 
-### Simple Sample
+## Simple Sample
 
 ```javascript
 import { sleep } from 'k6';
@@ -112,10 +114,10 @@ export default function() {
 }
 ```
 
-### Build K6 with K9 AMQP extension
+## Build K6 with K9 AMQP extension
 
 ```
-$ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.4
+$ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.6
 
 2025/06/22 10:52:49 INFO Building k6
 2025/06/22 10:52:49 INFO Building new k6 binary (native)
@@ -128,8 +130,8 @@ go: finding module for package gopkg.in/tomb.v1
 go: found gopkg.in/tomb.v1 in gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.9.0
 2025/06/22 10:52:49 INFO importing extensions
-2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.4
-go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.4
+2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.6
+go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.6
 2025/06/22 10:53:08 INFO Building k6
 2025/06/22 10:53:15 INFO Build complete
 2025/06/22 10:53:15 INFO Cleaning up work directory /tmp/k6foundry1730656898
@@ -143,9 +145,9 @@ Verify:
 $ ./k6 --version
 k6 v1.0.0 (go1.24.3, linux/amd64)
 Extensions:
-  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp/exchange [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.4, k6/x/k9amqp/queue [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp/exchange [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp/queue [js]
 ```
 
 
@@ -286,7 +288,7 @@ default ✓ [======================================] 10 VUs  30s
 
 ```
 
-### Consumer Listner Sample
+### Consumer Listener Sample
 
 The sample uses `constant-vus` executor and listener to consume messages from the queue.
 
@@ -294,6 +296,7 @@ The sample uses `constant-vus` executor and listener to consume messages from th
 import k9amqp from 'k6/x/k9amqp';
 import queue from 'k6/x/k9amqp/queue';
 import exchange from 'k6/x/k9amqp/exchange';
+import { vu } from 'k6/execution';
 import { fail, sleep } from 'k6';
 
 export const options = {
@@ -309,7 +312,7 @@ export const options = {
     },
     consume: {
       executor: 'constant-vus',
-      vus: 5,
+      vus: 2,
       duration: '1m10s',
       exec: 'consume'
     },
@@ -328,7 +331,7 @@ const amqpOptions = {
 
 const poolOptions = {
   channels_per_conn : __ENV.AMQP_CHANNELS_PER_CONN || 1,
-  channels_cache_size : __ENV.AMQP_CACHE_SIZE || 20,  
+  channels_cache_size : __ENV.AMQP_CACHE_SIZE || 20,
 }
 
 // Inits K9 AMQP Client
@@ -365,7 +368,7 @@ export function produce() {
   // Publishes simple JSON message to 'test.ex' exchange usnit 'test' routing key.
   client.publish(
   { exchange: "test.ex", key: "test"},
-  { content_type: "application/json",    
+  { content_type: "application/json",
     priority: 0,
     app_id: "k6",
     body: "{\"test\":\"fe95QtmPWcZ1e6UA4SAzFE1lSNbO60hfkpr6D8RSfT7JEfAK7MC1rWX0noKq6XcLxuGnS6s95RJnqxakFAKxUkXIyS77GnXSygIQQmjrTvIiIXkIVGnXkCgbyrDUSM6V8FFuQGEswmh7si9qHQa3q6NauHmtgOfFOdvv6qj2nGs6UNSOLLlpOhjysF2sHVL5pitHRvZaP80a5Cj6R3nopkmh2ZCgoovWBpFZC1yGL2IBqxE40tzLMVORTapTm23PT1gwCvLdL7ykvHNLnhOH5hS5Bu1SuU0lcn4BjY1sRd6nDgzt1I9ys6pkXJf1K4SGZsd7UYGPjdqDC2cLEmSH6KTk0W2Na4vIxr1nkXJyUpvv9yXZLnuPa82SpjbVeJ6aNhlJuSJQReSUOeQGU3c7s0dlQnZ4miePKX3TXMNCDu1eOMKcypAD9aIFpguV32egOcJLX8HxCQ21Q41m8wcMumw0xxWorLHxMd6eZJIcrmsOJip8H0Lf\"}"
@@ -375,13 +378,13 @@ export function produce() {
 
 export function consume() {
   let c = 0;
-  const listener = function(data) { 
+  const listener = function(data) {
     c++;
     // do smth.
    }
   client.listen({queue: "test.q", auto_ack: true}, listener);
   sleep(toSeconds(consumeDuration));
-  console.log("Message consumed: " + c)
+  console.log(`Consumer [${vu.idInTest}] consumed ${c} messages`)
 }
 
 function toSeconds(duration) {
@@ -404,7 +407,7 @@ function toSeconds(duration) {
 
 
 ```
-$ ./k6 run examples/produce-consume-listener.js
+$ ./k6 run ./examples/produce-consume-listener.js
 
          /\      Grafana   /‾‾/
     /\  /  \     |\  __   /  /  
@@ -412,34 +415,45 @@ $ ./k6 run examples/produce-consume-listener.js
   /          \   |   (  |  (‾)  |
  / __________ \  |_|\_\  \_____/
 
-INFO[0000] 2025/07/07 19:07:18 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
+INFO[0000] 2025/07/08 21:43:07 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20}
      execution: local
-        script: examples/produce-consume-listener.js
+        script: ./examples/produce-consume-listener.js
         output: -
 
      scenarios: (100.00%) 2 scenarios, 42 max VUs, 1m40s max duration (incl. graceful stop):
               * consume: 2 looping VUs for 1m10s (exec: consume, gracefulStop: 30s)
               * publish: 333.33 iterations/s for 1m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
 
-INFO[0000] 2025/07/07 19:07:18 INFO no available channel in pool, creating new one 
-INFO[0000] 2025/07/07 19:07:18 INFO exchange created name=test.ex 
-INFO[0000] 2025/07/07 19:07:18 INFO qeuue created name=test.q 
-INFO[0000] 2025/07/07 19:07:18 INFO qeuue binded name=test.q key=test 
-INFO[0003] 2025/07/07 19:07:21 INFO no available channel in pool, creating new one 
-INFO[0070] Consumer [1] consumed 10002 messages          source=console
-INFO[0070] Consumer [2] consumed 9999 messages           source=console
-INFO[0070] 2025/07/07 19:08:28 INFO Teardown AMQP Client 
+INFO[0000] 2025/07/08 21:43:07 INFO no available channel in pool, creating new one
+INFO[0000] 2025/07/08 21:43:07 INFO exchange created name=test.ex
+INFO[0000] 2025/07/08 21:43:07 INFO qeuue created name=test.q
+INFO[0000] 2025/07/08 21:43:07 INFO qeuue binded name=test.q key=test
+INFO[0001] 2025/07/08 21:43:08 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
+INFO[0070] Consumer [2] consumed 9995 messages           source=console
+INFO[0070] Consumer [4] consumed 10006 messages          source=console
+INFO[0070] 2025/07/08 21:44:17 INFO Teardown AMQP Client
 
 
   █ TOTAL RESULTS
 
     CUSTOM
-    amqp_pub_sent..........................: 20001 285.628133/s
-    amqp_sub_latency.......................: avg=0     min=0       med=0        max=0     p(90)=0        p(95)=0
+    amqp_pub_sent..........................: 20001 285.395566/s
+    amqp_sub_latency.......................: avg=0      min=0       med=0       max=0     p(90)=0        p(95)=0
 
     EXECUTION
-    iteration_duration.....................: avg=7.3ms min=69.88µs med=297.03µs max=1m10s p(90)=381.32µs p(95)=417.06µs
-    iterations.............................: 20003 285.656695/s
+    iteration_duration.....................: avg=7.34ms min=70.83µs med=322.9µs max=1m10s p(90)=412.21µs p(95)=450.42µs
+    iterations.............................: 20003 285.424105/s
     vus....................................: 2     min=2        max=3
     vus_max................................: 22    min=22       max=22
 
@@ -450,7 +464,7 @@ INFO[0070] 2025/07/07 19:08:28 INFO Teardown AMQP Client
 
 
 
-running (1m10.0s), 00/22 VUs, 20003 complete and 0 interrupted iterations
+running (1m10.1s), 00/22 VUs, 20003 complete and 0 interrupted iterations
 consume ✓ [======================================] 2 VUs      1m10s
 publish ✓ [======================================] 00/20 VUs  1m0s  333.33 iters/s
 
