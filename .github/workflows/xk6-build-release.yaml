@@ -15,7 +15,7 @@ on:
       k9_amqp_version:
         description: 'xk6-k9-amqp version to build with xk6'
         required: false
-        default: 'v0.0.4'
+        default: 'v0.0.6'
         type: string
   schedule:
     - cron: '? 7 * * 4'
@@ -34,7 +34,7 @@ jobs:
       - name: Set k9-amqp version
         id: k9_amqp_version # Give this step an ID to reference its output
         run: |
-          K9_AMQP_VERSION="${{ github.event.inputs.k9_amqp_version || 'v0.0.4' }}"
+          K9_AMQP_VERSION="${{ github.event.inputs.k9_amqp_version || 'v0.0.6' }}"
           echo "Building xk6-k9-amqp version: $K9_AMQP_VERSION"
           echo "version=$K9_AMQP_VERSION" >> "$GITHUB_OUTPUT"
       - name: xk6 build with k9-amqp extension
