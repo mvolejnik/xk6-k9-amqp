@@ -19,7 +19,7 @@ Use your Prometheus and Grafana or run locally.
 ### Create empty `data` directory
 
 
-```bash
+```sh
 mkdir data
 
 ```
@@ -71,7 +71,7 @@ services:
 ### Run Grafana and Prometheus
 
 
-```bash
+```sh
 sudo docker compose up
 
 [+] Running 5/5
@@ -136,7 +136,8 @@ Use `http://prometheus:9090` URL as Prometheus Server URL and `Save & test`
 
 Run K6 test using `K6_PROMETHEUS_RW_SERVER_URL` environment variable.
 
-```
+
+```sh
 K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw ./samples/produce-consume.js
 
 

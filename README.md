@@ -35,6 +35,7 @@ How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote wr
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
 
+- v1.4.2
 - v1.1.0
 - v1.0.0
 - v0.59.0
@@ -116,7 +117,7 @@ export default function() {
 
 ## Build K6 with K9 AMQP extension
 
-```
+```sh
 $ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.6
 
 2025/06/22 10:52:49 INFO Building k6
@@ -141,7 +142,7 @@ Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/tmp/k6' direct
 ```
 
 Verify:
-```
+```sh
 $ ./k6 --version
 k6 v1.0.0 (go1.24.3, linux/amd64)
 Extensions:
@@ -154,7 +155,7 @@ Extensions:
 ### Build K6 with K9 AMQP extension locally
 `go build .` used in development as fast compilation for syntax errors as it's way faster than `xk6 build...`.
 
-```
+```sh
 $ cat build.sh 
 #!/usr/bin/env bash
 
@@ -192,7 +193,7 @@ Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amq
 
 ### Run RqbbitMQ
 
-```
+```sh
 sudo docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 
 Unable to find image 'rabbitmq:3-management' locally
@@ -236,7 +237,7 @@ Status: Downloaded newer image for rabbitmq:3-management
 #### Run Simple Sample
 
 
-```
+```sh
 $ ./k6 run examples/simple.js 
 
          /\      Grafana   /‾‾/  
@@ -292,7 +293,7 @@ default ✓ [======================================] 10 VUs  30s
 
 The sample uses `constant-vus` executor and listener to consume messages from the queue.
 
-```
+```javascript
 import k9amqp from 'k6/x/k9amqp';
 import queue from 'k6/x/k9amqp/queue';
 import exchange from 'k6/x/k9amqp/exchange';
@@ -406,7 +407,7 @@ function toSeconds(duration) {
 #### Run Consumer Listner Sample
 
 
-```
+```sh
 $ ./k6 run ./examples/produce-consume-listener.js
 
          /\      Grafana   /‾‾/
