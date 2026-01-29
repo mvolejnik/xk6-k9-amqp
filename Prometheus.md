@@ -73,7 +73,9 @@ services:
 
 ```sh
 sudo docker compose up
+```
 
+```sh
 [+] Running 5/5
  ✔ Network prometheus_prometheus  Created                                                                                                                                                               0.1s 
  ✔ Network prometheus_rabbitmq    Created                                                                                                                                                               0.1s 
@@ -139,7 +141,9 @@ Run K6 test using `K6_PROMETHEUS_RW_SERVER_URL` environment variable.
 
 ```sh
 K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw ./samples/produce-consume.js
+```
 
+```sh
 
          /\      Grafana   /‾‾/
     /\  /  \     |\  __   /  / 

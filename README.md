@@ -24,7 +24,7 @@
 There is [Grafana xk6-amqp extensions](https://github.com/grafana/xk6-amqp), but...
 
 - it's deprecated
-- causes [Hiigh Channel Churn](https://www.rabbitmq.com/docs/channels#monitoring) rate due to openning new channel for every message being published
+- causes [High Channel Churn](https://www.rabbitmq.com/docs/channels#monitoring) rate due to opening new channel for every message being published
 - no connection pool support (connection per VU is possible, but even so it might be too many in complex scenarios)
 
 ## Links
@@ -35,6 +35,7 @@ How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote wr
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
 
+- v1.5.0
 - v1.4.2
 - v1.1.0
 - v1.0.0
@@ -118,8 +119,10 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-$ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.6
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.7
+```
 
+```sh
 2025/06/22 10:52:49 INFO Building k6
 2025/06/22 10:52:49 INFO Building new k6 binary (native)
 2025/06/22 10:52:49 INFO Initializing Go module
@@ -131,8 +134,8 @@ go: finding module for package gopkg.in/tomb.v1
 go: found gopkg.in/tomb.v1 in gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.9.0
 2025/06/22 10:52:49 INFO importing extensions
-2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.6
-go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.6
+2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.7
+go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.7
 2025/06/22 10:53:08 INFO Building k6
 2025/06/22 10:53:15 INFO Build complete
 2025/06/22 10:53:15 INFO Cleaning up work directory /tmp/k6foundry1730656898
@@ -143,12 +146,15 @@ Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/tmp/k6' direct
 
 Verify:
 ```sh
-$ ./k6 --version
+./k6 --version
+```
+
+```sh
 k6 v1.0.0 (go1.24.3, linux/amd64)
 Extensions:
-  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp/exchange [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.6, k6/x/k9amqp/queue [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp/exchange [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp/queue [js]
 ```
 
 
@@ -195,7 +201,9 @@ Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amq
 
 ```sh
 sudo docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
 
+```sh
 Unable to find image 'rabbitmq:3-management' locally
 3-management: Pulling from library/rabbitmq
 0622fac788ed: Already exists 
@@ -238,7 +246,10 @@ Status: Downloaded newer image for rabbitmq:3-management
 
 
 ```sh
-$ ./k6 run examples/simple.js 
+./k6 run examples/simple.js
+```
+
+```sh
 
          /\      Grafana   /‾‾/  
     /\  /  \     |\  __   /  /   
@@ -408,8 +419,10 @@ function toSeconds(duration) {
 
 
 ```sh
-$ ./k6 run ./examples/produce-consume-listener.js
+./k6 run ./examples/produce-consume-listener.js
+```
 
+```sh
          /\      Grafana   /‾‾/
     /\  /  \     |\  __   /  /  
    /  \/    \    | |/ /  /   ‾‾\
