@@ -127,30 +127,19 @@ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.0
 ```
 
 ```sh
-11:03AM DBG Resolving k6 repo module path for version repo=go.k6.io/k6 version=v2.0.0
-11:03AM DBG Inferred module path from semver base=go.k6.io/k6 version=v2.0.0 path=go.k6.io/k6/v2
-11:03AM DBG Resolved k6 repo path repo=go.k6.io/k6/v2
-11:03AM INF Building new k6 binary (native)
-11:03AM INF Initializing Go module
-go: creating new go.mod: module k6
-11:03AM INF Creating k6 main
-11:03AM INF adding dependency go.k6.io/k6/v2@v2.0.0
-go: finding module for package github.com/fsnotify/fsnotify
-go: finding module for package gopkg.in/tomb.v1
-go: found gopkg.in/tomb.v1 in gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
-go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.10.1
-11:03AM INF importing extensions
-11:03AM INF adding dependency github.com/mvolejnik/xk6-k9-amqp => .
-go: found github.com/mvolejnik/xk6-k9-amqp in github.com/mvolejnik/xk6-k9-amqp v0.0.0-00010101000000-000000000000
-11:03AM INF Building k6
-11:03AM INF Build complete
-11:03AM INF Cleaning up work directory /tmp/k6foundry3181484987
-11:03AM INF Successful build platform=linux/amd64
-11:03AM INF added module=go.k6.io/k6/v2 version=v2.0.0
-11:03AM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.0.0-00010101000000-000000000000
-11:03AM INF A new binary has been built based on k6 version=v2.0.0
-11:03AM DBG Go proxy request url=https://proxy.golang.org/go.k6.io/k6/v2/@latest
-11:03AM DBG Go proxy response url=https://proxy.golang.org/go.k6.io/k6/v2/@latest status=200
+3:54PM INF Building new k6 binary (native)
+3:54PM INF Initializing Go module
+3:54PM INF Creating k6 main
+3:54PM INF adding dependency go.k6.io/k6/v2@v2.0.0
+3:54PM INF importing extensions
+3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.0
+3:54PM INF Building k6
+3:54PM INF Build complete
+3:54PM INF Cleaning up work directory /tmp/k6foundry768369310
+3:54PM INF Successful build platform=linux/amd64
+3:54PM INF added module=go.k6.io/k6/v2 version=v2.0.0
+3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.0
+3:54PM INF A new binary has been built based on k6 version=v2.0.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
 Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amqp' directory.
