@@ -47,7 +47,7 @@ func (queue *Queue) Declare(client *Client, opts QueueDeclareOptions) (*amqp.Que
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("qeuue created", "name", amqpQueue.Name)
+	slog.Info("queue created", "name", amqpQueue.Name)
 	return &amqpQueue, nil
 }
 
@@ -77,7 +77,7 @@ func (queue *Queue) Delete(client *Client, opts QueueDeleteOptions) error {
 	if err != nil {
 		return err
 	}
-	slog.Info("qeuue deleted", "name", opts.Name)
+	slog.Info("queue deleted", "name", opts.Name)
 	return nil
 }
 
@@ -104,7 +104,7 @@ func (queue *Queue) Bind(client *Client, opts QueueBindOptions) error {
 		opts.NoWait,
 		opts.Args,
 	)
-	slog.Info("qeuue binded", "name", opts.Name, "key", opts.Key)
+	slog.Info("queue binded", "name", opts.Name, "key", opts.Key)
 	return err
 }
 
@@ -130,7 +130,7 @@ func (queue *Queue) Unbind(client *Client, opts QueueUnbindOptions) error {
 		opts.Exchange,
 		opts.Args,
 	)
-	slog.Info("qeuue unbinded", "name", opts.Name, "key", opts.Key)
+	slog.Info("queue unbinded", "name", opts.Name, "key", opts.Key)
 	return err
 }
 
@@ -154,6 +154,6 @@ func (queue *Queue) Purge(client *Client, opts QueuePurgeOptions) (int, error) {
 		opts.Name,
 		opts.NoWait,
 	)
-	slog.Info("qeuue purged", "name", opts.Name, "messages", count)
+	slog.Info("queue purged", "name", opts.Name, "messages", count)
 	return count, err
 }

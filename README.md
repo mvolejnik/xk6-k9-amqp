@@ -35,6 +35,10 @@ How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote wr
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
 
+- v2.0.0
+
+Plugin version v0.0.7 k6 support:
+
 - v1.5.0
 - v1.4.2
 - v1.1.0
@@ -119,42 +123,50 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.0.7
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.0
 ```
 
 ```sh
-2025/06/22 10:52:49 INFO Building k6
-2025/06/22 10:52:49 INFO Building new k6 binary (native)
-2025/06/22 10:52:49 INFO Initializing Go module
+11:03AM DBG Resolving k6 repo module path for version repo=go.k6.io/k6 version=v2.0.0
+11:03AM DBG Inferred module path from semver base=go.k6.io/k6 version=v2.0.0 path=go.k6.io/k6/v2
+11:03AM DBG Resolved k6 repo path repo=go.k6.io/k6/v2
+11:03AM INF Building new k6 binary (native)
+11:03AM INF Initializing Go module
 go: creating new go.mod: module k6
-2025/06/22 10:52:49 INFO Creating k6 main
-2025/06/22 10:52:49 INFO adding dependency go.k6.io/k6@latest
+11:03AM INF Creating k6 main
+11:03AM INF adding dependency go.k6.io/k6/v2@v2.0.0
 go: finding module for package github.com/fsnotify/fsnotify
 go: finding module for package gopkg.in/tomb.v1
 go: found gopkg.in/tomb.v1 in gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
-go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.9.0
-2025/06/22 10:52:49 INFO importing extensions
-2025/06/22 10:52:49 INFO adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.0.7
-go: downloading github.com/mvolejnik/xk6-k9-amqp v0.0.7
-2025/06/22 10:53:08 INFO Building k6
-2025/06/22 10:53:15 INFO Build complete
-2025/06/22 10:53:15 INFO Cleaning up work directory /tmp/k6foundry1730656898
+go: found github.com/fsnotify/fsnotify in github.com/fsnotify/fsnotify v1.10.1
+11:03AM INF importing extensions
+11:03AM INF adding dependency github.com/mvolejnik/xk6-k9-amqp => .
+go: found github.com/mvolejnik/xk6-k9-amqp in github.com/mvolejnik/xk6-k9-amqp v0.0.0-00010101000000-000000000000
+11:03AM INF Building k6
+11:03AM INF Build complete
+11:03AM INF Cleaning up work directory /tmp/k6foundry3181484987
+11:03AM INF Successful build platform=linux/amd64
+11:03AM INF added module=go.k6.io/k6/v2 version=v2.0.0
+11:03AM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.0.0-00010101000000-000000000000
+11:03AM INF A new binary has been built based on k6 version=v2.0.0
+11:03AM DBG Go proxy request url=https://proxy.golang.org/go.k6.io/k6/v2/@latest
+11:03AM DBG Go proxy response url=https://proxy.golang.org/go.k6.io/k6/v2/@latest status=200
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
-Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/tmp/k6' directory.
+Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amqp' directory.
 ```
 
 Verify:
 ```sh
-./k6 --version
+./k6 version
 ```
 
 ```sh
-k6 v1.0.0 (go1.24.3, linux/amd64)
+k6 v2.0.0 (go1.26.3, linux/amd64)
 Extensions:
-  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp/exchange [js]
-  github.com/mvolejnik/xk6-k9-amqp v0.0.7, k6/x/k9amqp/queue [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.1.0, k6/x/k9amqp [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.1.0, k6/x/k9amqp/exchange [js]
+  github.com/mvolejnik/xk6-k9-amqp v0.1.0, k6/x/k9amqp/queue [js]
 ```
 
 
@@ -168,33 +180,22 @@ $ cat build.sh
 go build . && xk6 build latest --with xk6-k9-amqp=.
 
 $ ./build.sh 
-2024/11/23 21:38:06 [INFO] Temporary folder: /tmp/buildenv_2024-11-23-2138.79571920
-2024/11/23 21:38:06 [INFO] Initializing Go module
-2024/11/23 21:38:06 [INFO] exec (timeout=10s): /opt/go/bin/go mod init k6 
-go: creating new go.mod: module k6
-2024/11/23 21:38:06 [INFO] Replace xk6-k9-amqp => /home/mvolejnik/Git/xk6-k9-amqp
-2024/11/23 21:38:06 [INFO] exec (timeout=0s): /opt/go/bin/go mod edit -replace xk6-k9-amqp=/home/mvolejnik/Git/xk6-k9-amqp 
-2024/11/23 21:38:06 [INFO] exec (timeout=0s): /opt/go/bin/go mod tidy -compat=1.17 
-go: warning: "all" matched no packages
-2024/11/23 21:38:06 [INFO] Pinning versions
-2024/11/23 21:38:06 [INFO] exec (timeout=0s): /opt/go/bin/go mod tidy -compat=1.17 
-go: found xk6-k9-amqp in xk6-k9-amqp v0.0.0-00010101000000-000000000000
-go: finding module for package github.com/nxadm/tail
-go: found github.com/nxadm/tail in github.com/nxadm/tail v1.4.11
-2024/11/23 21:38:06 [INFO] Writing main module: /tmp/buildenv_2024-11-23-2138.79571920/main.go
-2024/11/23 21:38:06 [INFO] exec (timeout=0s): /opt/go/bin/go mod edit -require go.k6.io/k6@latest 
-2024/11/23 21:38:06 [INFO] exec (timeout=0s): /opt/go/bin/go mod tidy -compat=1.17 
-2024/11/23 21:38:07 [INFO] exec (timeout=0s): /opt/go/bin/go mod tidy -compat=1.17 
-2024/11/23 21:38:07 [INFO] Build environment ready
-2024/11/23 21:38:07 [INFO] Building k6
-2024/11/23 21:38:07 [INFO] exec (timeout=0s): /opt/go/bin/go mod tidy -compat=1.17 
-2024/11/23 21:38:07 [INFO] exec (timeout=0s): /opt/go/bin/go build -o /home/mvolejnik/Git/xk6-k9-amqp/k6 -ldflags=-w -s -trimpath 
-2024/11/23 21:38:08 [INFO] Build complete: ./k6
-2024/11/23 21:38:08 [INFO] Cleaning up temporary folder: /tmp/buildenv_2024-11-23-2138.79571920
+11:06AM INF Building new k6 binary (native)
+11:06AM INF Initializing Go module
+11:06AM INF Creating k6 main
+11:06AM INF adding dependency go.k6.io/k6/v2@v2.0.0
+11:06AM INF importing extensions
+11:06AM INF adding dependency xk6-k9-amqp => .
+11:06AM INF Building k6
+11:06AM INF Build complete
+11:06AM INF Cleaning up work directory /tmp/k6foundry2023905180
+11:06AM INF Successful build platform=linux/amd64
+11:06AM INF added module=go.k6.io/k6/v2 version=v2.0.0
+11:06AM INF added module=xk6-k9-amqp version=v0.0.0-00010101000000-000000000000
+11:06AM INF A new binary has been built based on k6 version=v2.0.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
 Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amqp' directory.
-
 ```
 
 ### Run RqbbitMQ
@@ -250,14 +251,15 @@ Status: Downloaded newer image for rabbitmq:3-management
 ```
 
 ```sh
+INFO[0000] 2026/05/14 11:08:56 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10} 
 
-         /\      Grafana   /‾‾/  
-    /\  /  \     |\  __   /  /   
-   /  \/    \    | |/ /  /   ‾‾\ 
+         /\      Grafana   /‾‾/
+    /\  /  \     |\  __   /  /
+   /  \/    \    | |/ /  /   ‾‾\
   /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/ 
+ / __________ \  |_|\_\  \_____/
 
-INFO[0000] 2024/11/23 21:41:45 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10} 
+
      execution: local
         script: examples/simple.js
         output: -
@@ -265,38 +267,49 @@ INFO[0000] 2024/11/23 21:41:45 INFO init amqp client with pool {ChannelsPerConn:
      scenarios: (100.00%) 1 scenario, 10 max VUs, 1m0s max duration (incl. graceful stop):
               * default: 10 looping VUs for 30s (gracefulStop: 30s)
 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO exchange created name=test.ex 
-INFO[0000] 2024/11/23 21:41:45 INFO qeuue created name=test.q 
-INFO[0000] 2024/11/23 21:41:45 INFO qeuue binded name=test.q key=test 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0000] 2024/11/23 21:41:45 INFO no available channel in pool, creating new one 
-INFO[0030] 2024/11/23 21:42:15 INFO qeuue deleted name=test.q 
-INFO[0030] 2024/11/23 21:42:15 INFO exchange deleted name=test.ex 
-INFO[0030] 2024/11/23 21:42:15 INFO Teardown AMQP Client 
-
-     amqp_pub_failed........: 0    0/s
-     amqp_pub_sent..........: 5750 191.158496/s
-     amqp_sub_failed........: 0    0/s
-     amqp_sub_no_delivery...: 5750 191.158496/s
-     amqp_sub_received......: 5750 191.158496/s
-     data_received..........: 0 B  0 B/s
-     data_sent..............: 0 B  0 B/s
-     iteration_duration.....: avg=52.23ms min=50.72ms med=52.06ms max=63.14ms p(90)=53.18ms p(95)=53.7ms
-     iterations.............: 5750 191.158496/s
-     vus....................: 10   min=10       max=10
-     vus_max................: 10   min=10       max=10
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO exchange created name=test.ex 
+INFO[0000] 2026/05/14 11:08:56 INFO queue created name=test.q 
+INFO[0000] 2026/05/14 11:08:56 INFO queue binded name=test.q key=test 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 11:08:56 INFO no available channel in pool, creating new one 
+INFO[0030] 2026/05/14 11:09:26 INFO queue deleted name=test.q 
+INFO[0030] 2026/05/14 11:09:26 INFO exchange deleted name=test.ex 
+INFO[0030] 2026/05/14 11:09:26 INFO Teardown AMQP Client 
 
 
-running (0m30.1s), 00/10 VUs, 5750 complete and 0 interrupted iterations
+  █ TOTAL RESULTS 
+
+    CUSTOM
+    amqp_pub_sent..........: 5746 190.877816/s
+    amqp_sub_failed........: 0    0/s
+    amqp_sub_latency.......: avg=0       min=0       med=0       max=0        p(90)=0       p(95)=0      
+    amqp_sub_no_delivery...: 5746 190.877816/s
+    amqp_sub_received......: 5746 190.877816/s
+
+    EXECUTION
+    iteration_duration.....: avg=52.26ms min=50.43ms med=51.99ms max=225.52ms p(90)=52.52ms p(95)=52.67ms
+    iterations.............: 5746 190.877816/s
+    vus....................: 10   min=10       max=10
+    vus_max................: 10   min=10       max=10
+
+    NETWORK
+    data_received..........: 0 B  0 B/s
+    data_sent..............: 0 B  0 B/s
+
+
+
+
+running (0m30.1s), 00/10 VUs, 5746 complete and 0 interrupted iterations
 default ✓ [======================================] 10 VUs  30s
+
 
 ```
 
@@ -423,13 +436,15 @@ function toSeconds(duration) {
 ```
 
 ```sh
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /  
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
+INFO[0000] 2026/05/14 13:56:37 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
 
-INFO[0000] 2025/07/08 21:43:07 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20}
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
      execution: local
         script: ./examples/produce-consume-listener.js
         output: -
@@ -438,48 +453,36 @@ INFO[0000] 2025/07/08 21:43:07 INFO init amqp client with pool {ChannelsPerConn:
               * consume: 2 looping VUs for 1m10s (exec: consume, gracefulStop: 30s)
               * publish: 333.33 iterations/s for 1m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
 
-INFO[0000] 2025/07/08 21:43:07 INFO no available channel in pool, creating new one
-INFO[0000] 2025/07/08 21:43:07 INFO exchange created name=test.ex
-INFO[0000] 2025/07/08 21:43:07 INFO qeuue created name=test.q
-INFO[0000] 2025/07/08 21:43:07 INFO qeuue binded name=test.q key=test
-INFO[0001] 2025/07/08 21:43:08 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0005] 2025/07/08 21:43:12 INFO no available channel in pool, creating new one
-INFO[0070] Consumer [2] consumed 9995 messages           source=console
-INFO[0070] Consumer [4] consumed 10006 messages          source=console
-INFO[0070] 2025/07/08 21:44:17 INFO Teardown AMQP Client
+INFO[0000] 2026/05/14 13:56:37 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/05/14 13:56:37 INFO exchange created name=test.ex 
+INFO[0000] 2026/05/14 13:56:37 INFO qeuue created name=test.q 
+INFO[0000] 2026/05/14 13:56:37 INFO qeuue binded name=test.q key=test 
+INFO[0042] 2026/05/14 13:57:19 INFO no available channel in pool, creating new one 
+INFO[0070] Consumer [15] consumed 10001 messages         source=console
+INFO[0070] Consumer [5] consumed 10000 messages          source=console
+INFO[0070] 2026/05/14 13:57:47 INFO Teardown AMQP Client 
 
 
-  █ TOTAL RESULTS
+  █ TOTAL RESULTS 
 
     CUSTOM
-    amqp_pub_sent..........................: 20001 285.395566/s
-    amqp_sub_latency.......................: avg=0      min=0       med=0       max=0     p(90)=0        p(95)=0
+    amqp_pub_sent........: 20001 285.580523/s
+    amqp_sub_latency.....: avg=0      min=0       med=0       max=0     p(90)=0        p(95)=0       
 
     EXECUTION
-    iteration_duration.....................: avg=7.34ms min=70.83µs med=322.9µs max=1m10s p(90)=412.21µs p(95)=450.42µs
-    iterations.............................: 20003 285.424105/s
-    vus....................................: 2     min=2        max=3
-    vus_max................................: 22    min=22       max=22
+    iteration_duration...: avg=7.06ms min=16.72µs med=59.19µs max=1m10s p(90)=112.93µs p(95)=133.91µs
+    iterations...........: 20003 285.609079/s
+    vus..................: 2     min=2        max=3 
+    vus_max..............: 22    min=22       max=22
 
     NETWORK
-    data_received..........................: 0 B   0 B/s
-    data_sent..............................: 0 B   0 B/s
+    data_received........: 0 B   0 B/s
+    data_sent............: 0 B   0 B/s
 
 
 
 
-running (1m10.1s), 00/22 VUs, 20003 complete and 0 interrupted iterations
+running (1m10.0s), 00/22 VUs, 20003 complete and 0 interrupted iterations
 consume ✓ [======================================] 2 VUs      1m10s
 publish ✓ [======================================] 00/20 VUs  1m0s  333.33 iters/s
-
 ```
