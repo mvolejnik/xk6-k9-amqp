@@ -9,8 +9,8 @@ import (
 
 	"github.com/grafana/sobek"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.k6.io/k6/js/modules"
-	"go.k6.io/k6/metrics"
+	"go.k6.io/k6/v2/js/modules"
+	"go.k6.io/k6/v2/metrics"
 )
 
 var amqpClient *AmqpClient

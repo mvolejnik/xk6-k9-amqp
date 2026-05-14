@@ -162,8 +162,8 @@ INFO[0000] 2025/05/25 20:46:05 INFO init amqp client with pool {ChannelsPerConn:
 
 INFO[0000] 2025/05/25 20:46:05 INFO no available channel in pool, creating new one
 INFO[0000] 2025/05/25 20:46:05 INFO exchange created name=test.ex
-INFO[0000] 2025/05/25 20:46:05 INFO qeuue created name=test.q
-INFO[0000] 2025/05/25 20:46:05 INFO qeuue binded name=test.q key=test
+INFO[0000] 2025/05/25 20:46:05 INFO queue created name=test.q
+INFO[0000] 2025/05/25 20:46:05 INFO queue binded name=test.q key=test
 INFO[0001] 2025/05/25 20:46:06 INFO no available channel in pool, creating new one
 INFO[0014] 2025/05/25 20:46:20 INFO no available channel in pool, creating new one
 INFO[0023] 2025/05/25 20:46:29 INFO no available channel in pool, creating new one

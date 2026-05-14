@@ -1,8 +1,8 @@
 package k9amqp
 
 import (
-	"go.k6.io/k6/js/modules"
-	"go.k6.io/k6/metrics"
+	"go.k6.io/k6/v2/js/modules"
+	"go.k6.io/k6/v2/metrics"
 )
 
 type amqpMetrics struct {
@@ -27,7 +27,7 @@ func registerMetrics(vu modules.VU) (amqpMetrics, error) {
 	if err != nil {
 		return m, err
 	}
-	m.PublishFailed, err = registry.NewMetric("amqp_pub_latency", metrics.Trend)
+	m.PublishLatency, err = registry.NewMetric("amqp_pub_latency", metrics.Trend)
 	if err != nil {
 		return m, err
 	}
@@ -43,7 +43,7 @@ func registerMetrics(vu modules.VU) (amqpMetrics, error) {
 	if err != nil {
 		return m, err
 	}
-	m.PublishFailed, err = registry.NewMetric("amqp_sub_latency", metrics.Trend)
+	m.ConsumeLatency, err = registry.NewMetric("amqp_sub_latency", metrics.Trend)
 	if err != nil {
 		return m, err
 	}

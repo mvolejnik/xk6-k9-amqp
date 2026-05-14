@@ -1,4 +1,4 @@
-FROM grafana/k6:1.1.0
+FROM grafana/k6:2.0.0
 
 COPY ./k6 /usr/bin/k6
 
