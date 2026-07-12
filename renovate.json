@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["pin", "digest", "patch", "minor"],
+      "groupName": "go dependencies"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions workflow packages"
+    },
+    {
+      "matchDepTypes": ["golang"],
+      "groupName": "go toolchain updates"
+    }
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ]
+}

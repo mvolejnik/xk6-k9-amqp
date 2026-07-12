@@ -1,6 +1,5 @@
 [![GitHub release](https://img.shields.io/github/v/release/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/releases)
 [![GitHub CI Workflow](https://img.shields.io/github/actions/workflow/status/mvolejnik/xk6-k9-amqp/build.yaml?branch=master&style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/actions/workflows/build.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://goreportcard.com/report/github.com/mvolejnik/xk6-k9-amqp)
 [![GitHub License](https://img.shields.io/github/license/mvolejnik/xk6-k9-amqp?style=for-the-badge)](https://github.com/mvolejnik/xk6-k9-amqp/blob/master/LICENSE)
 
 # xk6-k9-amqp
@@ -49,11 +48,13 @@ Plugin version v0.0.7 k6 support:
 
 ## K6 Extension Registry Requirements
 
-- ✅ a [README](./README.md) file - project description, build and usage instructions, as well as k6 version compatibility. The goal is to provide enough information to quickly and easily evaluate the extension.
-- ❌ the xk6 topic set (not ready for this yet)
-- ✅ a [non-restrictive](./LICENSE) license
-- ✅ an [examples](./examples/) folder with examples
+- ✅ a [LICENSE](./LICENSE) file using an allowed license
+- ✅ a [README](./README.md) that explains what the extension does and how to use it
+- ✅ a valid [go.mod](./go.mod)
+- ✅ runnable [examples](./examples/) in an examples folder
 - ✅ at least one versioned [release](https://github.com/mvolejnik/xk6-k9-amqp/releases)
+- ✅ a GitHub workflow with golangci-lint running on every pull request and every merge on the main branch
+- ✅ the xk6 topic set
 
 ## Simple Sample
 
@@ -124,7 +125,7 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.1
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.3
 ```
 
 ```sh
@@ -133,13 +134,13 @@ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.1
 3:54PM INF Creating k6 main
 3:54PM INF adding dependency go.k6.io/k6/v2@v2.1.0
 3:54PM INF importing extensions
-3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.1
+3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.3
 3:54PM INF Building k6
 3:54PM INF Build complete
 3:54PM INF Cleaning up work directory /tmp/k6foundry768369310
 3:54PM INF Successful build platform=linux/amd64
 3:54PM INF added module=go.k6.io/k6/v2 version=v2.1.0
-3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.1
+3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.3
 3:54PM INF A new binary has been built based on k6 version=v2.1.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!

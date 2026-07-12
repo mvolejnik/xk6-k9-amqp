@@ -26,7 +26,7 @@ type K9amqp struct {
 }
 
 type Client struct {
-	amqpClient AmqpClient
+	amqpClient *AmqpClient
 	k9amqp     K9amqp
 }
 
@@ -34,15 +34,21 @@ func (k9amqp *K9amqp) XClient(call sobek.ConstructorCall, rt *sobek.Runtime) *so
 	amqpOptions := new(AmqpOptions)
 	poolOptions := new(PoolOptions)
 	if len(call.Arguments) >= 1 {
-		rt.ExportTo(call.Arguments[0], amqpOptions)
+		if err := rt.ExportTo(call.Arguments[0], amqpOptions); err != nil {
+			panic(rt.NewTypeError("failed to export amqpOptions: %v", err))
+		}
 	}
 	if len(call.Arguments) >= 2 {
-		rt.ExportTo(call.Arguments[1], poolOptions)
+		if err := rt.ExportTo(call.Arguments[1], poolOptions); err != nil {
+			panic(rt.NewTypeError("failed to export poolOptions: %v", err))
+		}
 	}
 	amqpOptions.init()
 	poolOptions.init()
 	client := &Client{k9amqp: *k9amqp}
-	client.init(*amqpOptions, *poolOptions)
+	if err := client.init(*amqpOptions, *poolOptions); err != nil {
+		panic(rt.NewGoError(err))
+	}
 	return rt.ToValue(client).ToObject(rt)
 }
 
@@ -59,13 +65,15 @@ func (client *Client) getAmqpClient(amqpOptions AmqpOptions, poolOptions PoolOpt
 func (client *Client) init(amqpOptions AmqpOptions, poolOptions PoolOptions) error {
 	var err error
 	amqpClient, err := client.getAmqpClient(amqpOptions, poolOptions)
-	client.amqpClient = *amqpClient
+	client.amqpClient = amqpClient
 	return err
 }
 
 func (client *Client) Teardown() {
 	slog.Info("Teardown AMQP Client")
-	client.amqpClient.close()
+	if err := client.amqpClient.close(); err != nil {
+		slog.Error("failed to close amqp client(s)")
+	}
 }
 
 func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpProduceResponse, error) {
@@ -76,29 +84,36 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 		slog.Error("unable to get amqp channel")
 		return AmqpProduceResponse{Error: true, ErrorMessage: err.Error()}, err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
-	err, duration = client.publish(err, channel, opts, msg)
+	}()
+	duration, err = client.publish(channel, opts, msg)
 	var errMessage string
 	if err != nil {
 		errMessage = err.Error()
 	}
 	response := AmqpProduceResponse{Error: err != nil, ErrorMessage: errMessage}
-	client.k9amqp.reportPublishMetrics(*client, opts, response, duration)
+	if metricsErr := client.k9amqp.reportPublishMetrics(client, opts, response, duration); metricsErr != nil {
+		slog.Error("failed to report publish metrics", "error", metricsErr)
+	}
 	if err != nil {
 		return response, err
 	}
 	return response, nil
 }
 
-func (*Client) publish(err error, channel *amqp.Channel, opts PublishOptions, msg amqp.Publishing) (error, time.Duration) {
+func (*Client) publish(channel *amqp.Channel, opts PublishOptions, msg amqp.Publishing) (time.Duration, error) {
 	startTime := time.Now()
-	err = channel.Publish(
+	err := channel.Publish(
 		opts.Exchange,
 		opts.Key,
 		opts.Mandatory,
@@ -106,7 +121,7 @@ func (*Client) publish(err error, channel *amqp.Channel, opts PublishOptions, ms
 		msg,
 	)
 	duration := time.Since(startTime)
-	return err, duration
+	return duration, err
 }
 
 func (client *Client) Get(opts GetOptions) (AmqpGetResponse, error) {
@@ -118,13 +133,18 @@ func (client *Client) Get(opts GetOptions) (AmqpGetResponse, error) {
 		slog.Error("unable to get amqp channel")
 		return AmqpGetResponse{Error: true}, err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	delivery, ok, err = channel.Get(
 		opts.Queue,
 		opts.AutoAck,
@@ -134,7 +154,9 @@ func (client *Client) Get(opts GetOptions) (AmqpGetResponse, error) {
 		errorMessage = err.Error()
 	}
 	response := AmqpGetResponse{Delivery: delivery, Ok: ok, Error: err != nil, ErrorMessage: errorMessage}
-	client.k9amqp.reportGetMetrics(*client, response)
+	if metricsErr := client.k9amqp.reportGetMetrics(client, response); metricsErr != nil {
+		slog.Error("failed to report get metrics", "error", metricsErr)
+	}
 	if err != nil || !ok {
 		return response, err
 	}
@@ -150,14 +172,21 @@ func (client *Client) Consume(opts ConsumeOptions) (AmqpConsumeResponse, error) 
 		slog.Error("unable to get amqp channel")
 		return AmqpConsumeResponse{Error: true}, err
 	}
-	defer func(err error) {
-		channel.Cancel(consumerTag, opts.NoWait)
+	defer func() {
+		if cancelErr := channel.Cancel(consumerTag, opts.NoWait); cancelErr != nil {
+			slog.Error("failed to cancel consumer", "error", cancelErr)
+		}
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	amqpChannel, err := channel.Consume(
 		opts.Queue,
 		consumerTag,
@@ -186,7 +215,9 @@ func (client *Client) Consume(opts ConsumeOptions) (AmqpConsumeResponse, error) 
 		errorMessage = err.Error()
 	}
 	response := AmqpConsumeResponse{Deliveries: deliveries, Ok: len(deliveries) > 0, Error: err != nil, ErrorMessage: errorMessage}
-	client.k9amqp.reportConsumeMetrics(*client, response)
+	if metricsErr := client.k9amqp.reportConsumeMetrics(client, response); metricsErr != nil {
+		slog.Error("failed to report consume metrics", "error", metricsErr)
+	}
 	if err != nil || len(deliveries) == 0 {
 		return response, err
 	}
@@ -215,27 +246,40 @@ func (client *Client) Listen(opts ListenOptions, listener ListenerType) error {
 		opts.NoWait,
 		opts.Args,
 	)
+	if err != nil {
+		slog.Error("unable to consume from queue", "error", err)
+		if closeErr := channel.Close(); closeErr != nil {
+			slog.Error("failed to close channel", "error", closeErr)
+		}
+		if closeErr := conn.Close(); closeErr != nil {
+			slog.Error("failed to close connection", "error", closeErr)
+		}
+		return err
+	}
 
 	go func() {
-		defer func(err error) {
-			channel.Cancel(consumerTag, opts.NoWait)
-			if err != nil {
-				slog.Error(err.Error())
+		defer func() {
+			if cancelErr := channel.Cancel(consumerTag, opts.NoWait); cancelErr != nil {
+				slog.Error("failed to cancel consumer", "error", cancelErr)
 			}
-			conn.Close()
-		}(err)
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel", "error", closeErr)
+			}
+			if closeErr := conn.Close(); closeErr != nil {
+				slog.Error("failed to close connection", "error", closeErr)
+			}
+		}()
 		for d := range amqpChannel {
-			err = listener(d)
-			if err != nil {
+			if err := listener(d); err != nil {
 				slog.Error(fmt.Sprintf("%s (Listen)", err.Error()))
 				return
 			}
 		}
 	}()
-	return err
+	return nil
 }
 
-func (k9amqp *K9amqp) reportPublishMetrics(client Client, opts PublishOptions, resp AmqpProduceResponse, duration time.Duration) error {
+func (k9amqp *K9amqp) reportPublishMetrics(client *Client, opts PublishOptions, resp AmqpProduceResponse, duration time.Duration) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
@@ -274,7 +318,7 @@ func (k9amqp *K9amqp) reportPublishMetrics(client Client, opts PublishOptions, r
 	return nil
 }
 
-func (k9amqp *K9amqp) reportGetMetrics(client Client, resp AmqpGetResponse) error {
+func (k9amqp *K9amqp) reportGetMetrics(client *Client, resp AmqpGetResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
@@ -324,7 +368,7 @@ func (k9amqp *K9amqp) reportGetMetrics(client Client, resp AmqpGetResponse) erro
 	return nil
 }
 
-func (k9amqp *K9amqp) reportConsumeMetrics(client Client, resp AmqpConsumeResponse) error {
+func (k9amqp *K9amqp) reportConsumeMetrics(client *Client, resp AmqpConsumeResponse) error {
 	now := time.Now()
 	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
 	var delivery *amqp.Delivery

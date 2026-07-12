@@ -15,13 +15,18 @@ func (queue *Exchange) Declare(client *Client, opts ExchangeDeclareOptions) erro
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	err = channel.ExchangeDeclare(
 		opts.Name,
 		opts.Kind,
@@ -48,13 +53,18 @@ func (queue *Exchange) Delete(client *Client, opts ExchangeDeleteOptions) error 
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	err = channel.ExchangeDelete(
 		opts.Name,
 		opts.IfUnused,
@@ -76,13 +86,18 @@ func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	err = channel.ExchangeBind(
 		opts.Destination,
 		opts.Key,
@@ -94,7 +109,7 @@ func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
 	return err
 }
 
-func (exchange *Exchange) Unind(client *Client, opts ExchangeUnbindOptions) error {
+func (exchange *Exchange) Unbind(client *Client, opts ExchangeUnbindOptions) error {
 	if client == nil {
 		return errors.New("required 'client' parameter missing")
 	}
@@ -103,13 +118,18 @@ func (exchange *Exchange) Unind(client *Client, opts ExchangeUnbindOptions) erro
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel after error", "error", closeErr)
+			}
 		}
-	}(err)
+	}()
 	err = channel.ExchangeUnbind(
 		opts.Destination,
 		opts.Key,

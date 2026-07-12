@@ -17,11 +17,9 @@ type (
 	}
 
 	Queue struct {
-		amqpClient *AmqpClient
 	}
 
 	Exchange struct {
-		amqpClient *AmqpClient
 	}
 
 	ExchangeDeclareOptions struct {
