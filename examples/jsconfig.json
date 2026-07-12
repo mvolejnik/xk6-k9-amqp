@@ -1,0 +1,17 @@
+/// <reference path="../index.d.ts" />
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "k6/x/k9amqp": ["../index.d.ts"],
+      "k6/x/k9amqp/*": ["../index.d.ts"]
+    }
+  },
+  "include": [
+    "**/*.js",
+    "../index.d.ts"
+  ]
+}

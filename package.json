@@ -1,0 +1,8 @@
+{
+  "name": "xk6-k9-amqp",
+  "version": "1.0.0",
+  "description": "TypeScript types for the xk6-k9-amqp extension",
+  "main": "",
+  "types": "index.d.ts",
+  "dependencies": {}
+}
