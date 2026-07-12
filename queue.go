@@ -18,13 +18,18 @@ func (queue *Queue) Declare(client *Client, opts QueueDeclareOptions) (*amqp.Que
 		slog.Error("unable to get amqp channel")
 		return nil, err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+ 				slog.Error("failed to close channel after error", "error", closeErr)
+ 			}
 		}
-	}(err)
+	}()
 	if opts.Passive {
 		amqpQueue, err = channel.QueueDeclarePassive(
 			opts.Name,
@@ -61,13 +66,18 @@ func (queue *Queue) Delete(client *Client, opts QueueDeleteOptions) error {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+ 				slog.Error("failed to close channel after error", "error", closeErr)
+ 			}
 		}
-	}(err)
+	}()
 	_, err = channel.QueueDelete(
 		opts.Name,
 		opts.IfUnused,
@@ -90,13 +100,18 @@ func (queue *Queue) Bind(client *Client, opts QueueBindOptions) error {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+ 				slog.Error("failed to close channel after error", "error", closeErr)
+ 			}
 		}
-	}(err)
+	}()
 	err = channel.QueueBind(
 		opts.Name,
 		opts.Key,
@@ -117,13 +132,18 @@ func (queue *Queue) Unbind(client *Client, opts QueueUnbindOptions) error {
 		slog.Error("unable to get amqp channel")
 		return err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+ 				slog.Error("failed to close channel after error", "error", closeErr)
+ 			}
 		}
-	}(err)
+	}()
 	err = channel.QueueUnbind(
 		opts.Name,
 		opts.Key,
@@ -143,13 +163,18 @@ func (queue *Queue) Purge(client *Client, opts QueuePurgeOptions) (int, error) {
 		slog.Error("unable to get amqp channel")
 		return 0, err
 	}
-	defer func(err error) {
+	defer func() {
 		if err == nil {
-			client.amqpClient.channels.put(channel, err)
+			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
+				slog.Error("failed to return channel to pool", "error", putErr)
+			}
 		} else {
 			slog.Info("blows channel after error")
+			if closeErr := channel.Close(); closeErr != nil {
+ 				slog.Error("failed to close channel after error", "error", closeErr)
+ 			}
 		}
-	}(err)
+	}()
 	count, err := channel.QueuePurge(
 		opts.Name,
 		opts.NoWait,

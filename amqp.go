@@ -118,10 +118,17 @@ func (amqpClient *AmqpClient) init() error {
 }
 
 func (amqpClient *AmqpClient) close() error {
+	var closeErr error
 	for _, conn := range amqpClient.connections {
-		conn.Close()
+		err := conn.Close()
+		if closeErr == nil && err != nil {
+			closeErr = err
+		}
+		if err != nil {
+			slog.Error(err.Error())
+		}
 	}
-	return nil
+	return closeErr
 }
 
 func (amqpClient *AmqpClient) Connect() (*amqp.Connection, error) {
