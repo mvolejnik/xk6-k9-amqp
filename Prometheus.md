@@ -30,11 +30,13 @@ mkdir data
 networks:
   prometheus:
     driver: bridge
+  rabbitmq:
+    driver: bridge
 
 services:
   grafana:
     container_name: grafana
-    image: grafana/grafana:12.0.0
+    image: grafana/grafana:13.1.0
     hostname: grafana
     ports:
       - "3000:3000"
@@ -42,7 +44,7 @@ services:
       - prometheus
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:v3.3.1
+    image: prom/prometheus:v3.13.1
     hostname: prometheus
     ports:
       - "9090:9090"
@@ -58,14 +60,13 @@ services:
     command: "--config.file=prometheus.yaml --storage.tsdb.retention.time=60d --web.enable-remote-write-receiver"
   rabbitmq:
     container_name: rabbitmq
-    image: rabbitmq:4.1.0-management
+    image: rabbitmq:4.3.2-management-alpine
     hostname: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
       - rabbitmq
-
 ```
 
 ### Run Grafana and Prometheus
@@ -76,45 +77,60 @@ sudo docker compose up
 ```
 
 ```sh
-[+] Running 5/5
- ✔ Network prometheus_prometheus  Created                                                                                                                                                               0.1s 
- ✔ Network prometheus_rabbitmq    Created                                                                                                                                                               0.1s 
- ✔ Container grafana              Created                                                                                                                                                               0.2s 
- ✔ Container prometheus           Created                                                                                                                                                               0.2s 
- ✔ Container rabbitmq             Created                                                                                                                                                               0.2s 
+[+] up 3/3
+ ✔ Container rabbitmq   Created                                                                                                                                                                                                                                                              0.1s
+ ✔ Container grafana    Created                                                                                                                                                                                                                                                              0.1s
+ ✔ Container prometheus Created                                                                                                                                                                                                                                                              0.1s
 Attaching to grafana, prometheus, rabbitmq
-prometheus  | time=2025-05-25T16:28:15.632Z level=INFO source=main.go:1487 msg="updated GOGC" old=100 new=75
-prometheus  | time=2025-05-25T16:28:15.633Z level=INFO source=main.go:625 msg="Leaving GOMAXPROCS=8: CPU quota undefined" component=automaxprocs
-prometheus  | time=2025-05-25T16:28:15.633Z level=INFO source=main.go:713 msg="Starting Prometheus Server" mode=server version="(version=3.3.1, branch=HEAD, revision=3dcecabff6f52cc155290cb723706f4c324ed0ab)"
-prometheus  | time=2025-05-25T16:28:15.633Z level=INFO source=main.go:718 msg="operational information" build_context="(go=go1.24.2, platform=linux/amd64, user=root@f0d295ca0db2, date=20250502-15:03:21, tags=netgo,builtinassets,stringlabels)" host_details="(Linux 6.14.0-15-generic #15-Ubuntu SMP PREEMPT_DYNAMIC Sun Apr  6 15:05:05 UTC 2025 x86_64 prometheus (none))" fd_limits="(soft=1073741816, hard=1073741816)" vm_limits="(soft=unlimited, hard=unlimited)"
-prometheus  | time=2025-05-25T16:28:15.638Z level=INFO source=web.go:654 msg="Start listening for connections" component=web address=0.0.0.0:9090
-prometheus  | time=2025-05-25T16:28:15.639Z level=INFO source=main.go:1231 msg="Starting TSDB ..."
-prometheus  | time=2025-05-25T16:28:15.643Z level=INFO source=tls_config.go:347 msg="Listening on" component=web address=[::]:9090
-prometheus  | time=2025-05-25T16:28:15.643Z level=INFO source=tls_config.go:350 msg="TLS is disabled." component=web http2=false address=[::]:9090
-prometheus  | time=2025-05-25T16:28:15.651Z level=INFO source=head.go:638 msg="Replaying on-disk memory mappable chunks if any" component=tsdb
-prometheus  | time=2025-05-25T16:28:15.651Z level=INFO source=head.go:725 msg="On-disk memory mappable chunks replay completed" component=tsdb duration=7.506µs
-prometheus  | time=2025-05-25T16:28:15.651Z level=INFO source=head.go:733 msg="Replaying WAL, this may take a while" component=tsdb
-prometheus  | time=2025-05-25T16:28:15.652Z level=INFO source=head.go:805 msg="WAL segment loaded" component=tsdb segment=0 maxSegment=0
-prometheus  | time=2025-05-25T16:28:15.652Z level=INFO source=head.go:842 msg="WAL replay completed" component=tsdb checkpoint_replay_duration=100.215µs wal_replay_duration=599.645µs wbl_replay_duration=561ns chunk_snapshot_load_duration=0s mmap_chunk_replay_duration=7.506µs total_replay_duration=887.756µs
-prometheus  | time=2025-05-25T16:28:15.657Z level=INFO source=main.go:1252 msg="filesystem information" fs_type=EXT4_SUPER_MAGIC
-prometheus  | time=2025-05-25T16:28:15.657Z level=INFO source=main.go:1255 msg="TSDB started"
-prometheus  | time=2025-05-25T16:28:15.657Z level=INFO source=main.go:1440 msg="Loading configuration file" filename=prometheus.yaml
-prometheus  | time=2025-05-25T16:28:15.658Z level=INFO source=main.go:1480 msg="Completed loading of configuration file" db_storage=1.702µs remote_storage=2.186µs web_handler=542ns query_engine=2.055µs scrape=1.160625ms scrape_sd=1.874µs notify=1.28µs notify_sd=1.238µs rules=1.616µs tracing=9.019µs filename=prometheus.yaml totalDuration=1.407272ms
-prometheus  | time=2025-05-25T16:28:15.659Z level=INFO source=main.go:1216 msg="Server is ready to receive web requests."
-prometheus  | time=2025-05-25T16:28:15.659Z level=INFO source=manager.go:175 msg="Starting rule manager..." component="rule manager"
-rabbitmq    | =INFO REPORT==== 25-May-2025::16:28:15.872605 ===
-rabbitmq    |     alarm_handler: {set,{system_memory_high_watermark,[]}}
-grafana     | logger=settings t=2025-05-25T16:28:16.203224389Z level=info msg="Starting Grafana" version=12.0.0 commit=4c0e7045f97f356716755b47183b22e7f12bb4bf branch=HEAD compiled=2025-05-25T16:28:16Z
-grafana     | logger=settings t=2025-05-25T16:28:16.203761458Z level=info msg="Config loaded from" file=/usr/share/grafana/conf/defaults.ini
-grafana     | logger=settings t=2025-05-25T16:28:16.203776901Z level=info msg="Config loaded from" file=/etc/grafana/grafana.ini
-grafana     | logger=settings t=2025-05-25T16:28:16.203783901Z level=info msg="Config overridden from command line" arg="default.paths.data=/var/lib/grafana"
-grafana     | logger=settings t=2025-05-25T16:28:16.203790011Z level=info msg="Config overridden from command line" arg="default.paths.logs=/var/log/grafana"
-grafana     | logger=settings t=2025-05-25T16:28:16.203796119Z level=info msg="Config overridden from command line" arg="default.paths.plugins=/var/lib/grafana/plugins"
-grafana     | logger=settings t=2025-05-25T16:28:16.203803287Z level=info msg="Config overridden from command line" arg="default.paths.provisioning=/etc/grafana/provisioning"
-grafana     | logger=settings t=2025-05-25T16:28:16.203809713Z level=info msg="Config overridden from command line" arg="default.log.mode=console"
-grafana     | logger=settings t=2025-05-25T16:28:16.203816097Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_DATA=/var/lib/grafana"
-grafana     | logger=settings t=2025-05-25T16:28:16.203822152Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_LOGS=/var/log/grafana"
-grafana     | logger=settings t=2025-05-25T16:28:16.203828009Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_PLUGINS=/var/lib/grafana/plugins"
+prometheus  | time=2026-07-12T09:59:06.079Z level=ERROR source=main.go:745 msg="Error loading config (--config.file=prometheus.yaml)" file=/prometheus/prometheus.yaml err="read prometheus.yaml: is a directory"
+prometheus exited with code 2
+rabbitmq    | 2026-07-12 09:59:06.315977+00:00 [warning] <0.144.0> Available file handles: 1024. Please consider increasing system limits
+grafana     | logger=settings t=2026-07-12T09:59:06.40139224Z level=info msg="Starting Grafana" version=13.1.0 commit=b309c9bb3b81a748c3a75289236a27309ed2566a branch=release-13.1.0#patched compiled=2026-06-23T07:16:42Z
+grafana     | logger=settings t=2026-07-12T09:59:06.402593274Z level=info msg="Unified migration configs enforced" storage_type=unified target=[all]
+grafana     | logger=settings t=2026-07-12T09:59:06.402614153Z level=info msg="Enforcing mode 5 for resource in unified storage" resource=playlists.playlist.grafana.app
+grafana     | logger=settings t=2026-07-12T09:59:06.402617539Z level=info msg="Enforcing mode 5 for resource in unified storage" resource=folders.folder.grafana.app
+grafana     | logger=settings t=2026-07-12T09:59:06.402621447Z level=info msg="Enforcing mode 5 for resource in unified storage" resource=dashboards.dashboard.grafana.app
+grafana     | logger=settings t=2026-07-12T09:59:06.402786256Z level=info msg="Config loaded from" file=/usr/share/grafana/conf/defaults.ini
+grafana     | logger=settings t=2026-07-12T09:59:06.402789893Z level=info msg="Config loaded from" file=/etc/grafana/grafana.ini
+grafana     | logger=settings t=2026-07-12T09:59:06.402792498Z level=info msg="Config overridden from command line" arg="default.paths.data=/var/lib/grafana"
+grafana     | logger=settings t=2026-07-12T09:59:06.402795062Z level=info msg="Config overridden from command line" arg="default.paths.logs=/var/log/grafana"
+grafana     | logger=settings t=2026-07-12T09:59:06.402797307Z level=info msg="Config overridden from command line" arg="default.paths.plugins=/var/lib/grafana/plugins"
+grafana     | logger=settings t=2026-07-12T09:59:06.402799711Z level=info msg="Config overridden from command line" arg="default.paths.provisioning=/etc/grafana/provisioning"
+grafana     | logger=settings t=2026-07-12T09:59:06.402802126Z level=info msg="Config overridden from command line" arg="default.log.mode=console"
+grafana     | logger=settings t=2026-07-12T09:59:06.402805452Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_DATA=/var/lib/grafana"
+grafana     | logger=settings t=2026-07-12T09:59:06.402808508Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_LOGS=/var/log/grafana"
+grafana     | logger=settings t=2026-07-12T09:59:06.402810922Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_PLUGINS=/var/lib/grafana/plugins"
+grafana     | logger=settings t=2026-07-12T09:59:06.402813347Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_PROVISIONING=/etc/grafana/provisioning"
+grafana     | logger=settings t=2026-07-12T09:59:06.402816963Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_HOME=/usr/share/grafana"
+grafana     | logger=settings t=2026-07-12T09:59:06.402819358Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_CONFIG=/etc/grafana/grafana.ini"
+grafana     | logger=settings t=2026-07-12T09:59:06.402821662Z level=info msg=Target target=[all]
+grafana     | logger=settings t=2026-07-12T09:59:06.402825439Z level=info msg="Path Home" path=/usr/share/grafana
+grafana     | logger=settings t=2026-07-12T09:59:06.4028846Z level=info msg="Path Data" path=/var/lib/grafana
+grafana     | logger=settings t=2026-07-12T09:59:06.402944423Z level=info msg="Path Logs" path=/var/log/grafana
+grafana     | logger=settings t=2026-07-12T09:59:06.402947629Z level=info msg="Path Plugins" path="[/var/lib/grafana/plugins /usr/share/grafana/data/plugins-bundled]"
+grafana     | logger=settings t=2026-07-12T09:59:06.402966654Z level=info msg="Path Provisioning" path=/etc/grafana/provisioning
+grafana     | logger=settings t=2026-07-12T09:59:06.40296967Z level=info msg="App mode production"
+grafana     | logger=featuremgmt t=2026-07-12T09:59:06.405939252Z level=info msg=FeatureToggles alertRuleRestore=true alertingBulkActionsInUI=true alertingImportYAMLUI=true alertingListViewV2=true alertingMigrationUI=true alertingMultiplePolicies=true alertingNavigationV2=true alertingNotificationsStepMode=true alertingQueryAndExpressionsStepMode=true alertingRulePermanentlyDelete=true alertingRuleRecoverDeleted=true alertingRuleVersionHistoryRestore=true alertingSaveStateCompressed=true alertingUIOptimizeReducer=true alertingUIUseBackendFilters=true alertingUIUseFullyCompatBackendFilters=true alertingUseNewSimplifiedRoutingHashAlgorithm=true annotationPermissionUpdate=true annotationsClustering=true awsAsyncQueryCaching=true awsDatasourcesTempCredentials=true azureMonitorEnableUserAuth=true azureMonitorPrometheusExemplars=true azureResourcePickerUpdates=true clearPreviousFieldValues=true cloudWatchCrossAccountQuerying=true cloudWatchNewLabelParsing=true cloudWatchRoundUpEndTime=true dashboardDefaultLayoutSelector=true dashboardNewLayouts=true dashboardSectionVariables=true dashboardUnifiedDrilldownControls=true enableSCIM=true feedbackButton=true grafana.scenesFlickeringFix=true grafanaAdvisor=true grafanaAssistantInProfilesDrilldown=true heatmapRowsAxisOptions=true improvedExternalSessionHandling=true improvedExternalSessionHandlingSAML=true influxdbBackendMigration=true kubernetesShortURLs=true lokiLabelNamesQueryApi=true lokiQuerySplitting=true multiPropsVariables=true newClickhouseConfigPageDesign=true newLogContext=true newLogsPanel=true newUnconfiguredPanel=true onlyStoreActionSets=true panelStyleActions=true profilesExemplars=true prometheusAzureOverrideAudience=true prometheusTypeMigration=true provisioning=true provisioning.readmes=true provisioningFolderMetadata=true pyroscopeUTF8LabelNames=true react19=true rememberUserOrgForSso=true renderAuthJWT=true restrictedPluginApis=true sqlExpressions=true teamFolders=true useKubernetesShortURLsAPI=true useMultipleScopeNodesEndpoint=true useScopeSingleNodeEndpoint=true useSessionStorageForRedirection=true vizLegendFacetedFilter=true vizPresets=true
+grafana     | logger=sqlstore t=2026-07-12T09:59:06.406027437Z level=info msg="Connecting to DB" dbtype=sqlite3
+grafana     | logger=sqlstore t=2026-07-12T09:59:06.406042385Z level=info msg="Using SQLite driver" driver=modernc.org/sqlite
+grafana     | logger=sqlstore t=2026-07-12T09:59:06.406061531Z level=info msg="Creating SQLite database file" path=/var/lib/grafana/grafana.db
+grafana     | logger=migrator t=2026-07-12T09:59:06.410168276Z level=info msg="Locking database"
+grafana     | logger=migrator t=2026-07-12T09:59:06.410183885Z level=info msg="Starting DB migrations"
+grafana     | logger=migrator t=2026-07-12T09:59:06.41094356Z level=info msg="Executing migration" id="create migration_log table"
+grafana     | logger=migrator t=2026-07-12T09:59:06.411271185Z level=info msg="Migration successfully executed" id="create migration_log table" duration=327.334µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.414324063Z level=info msg="Executing migration" id="create user table"
+grafana     | logger=migrator t=2026-07-12T09:59:06.414637431Z level=info msg="Migration successfully executed" id="create user table" duration=313.237µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.417146588Z level=info msg="Executing migration" id="add unique index user.login"
+grafana     | logger=migrator t=2026-07-12T09:59:06.417429259Z level=info msg="Migration successfully executed" id="add unique index user.login" duration=282.73µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.41980201Z level=info msg="Executing migration" id="add unique index user.email"
+grafana     | logger=migrator t=2026-07-12T09:59:06.420058742Z level=info msg="Migration successfully executed" id="add unique index user.email" duration=264.016µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.422552952Z level=info msg="Executing migration" id="drop index UQE_user_login - v1"
+grafana     | logger=migrator t=2026-07-12T09:59:06.422869475Z level=info msg="Migration successfully executed" id="drop index UQE_user_login - v1" duration=318.197µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.425243459Z level=info msg="Executing migration" id="drop index UQE_user_email - v1"
+grafana     | logger=migrator t=2026-07-12T09:59:06.425496284Z level=info msg="Migration successfully executed" id="drop index UQE_user_email - v1" duration=253.145µs
+grafana     | logger=migrator t=2026-07-12T09:59:06.428082015Z level=info msg="Executing migration" id="Rename table user to user_v1 - v1"
+grafana     | logger=migrator t=2026-07-12T09:59:06.429160679Z level=info msg="Migration successfully executed" id="Rename table user to user_v1 - v1" duration=1.077461ms
+grafana     | logger=migrator t=2026-07-12T09:59:06.431531828Z level=info msg="Executing migration" id="create user table v2"
 ...
 ```
 
@@ -140,65 +156,60 @@ Run K6 test using `K6_PROMETHEUS_RW_SERVER_URL` environment variable.
 
 
 ```sh
-K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw ./samples/produce-consume.js
+K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write k6 run -o experimental-prometheus-rw ./examples/produce-consume.js
 ```
 
 ```sh
+INFO[0000] 2026/07/12 12:06:45 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20}
 
          /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  / 
+    /\  /  \     |\  __   /  /  
    /  \/    \    | |/ /  /   ‾‾\
   /          \   |   (  |  (‾)  |
  / __________ \  |_|\_\  \_____/
 
-INFO[0000] 2025/05/25 20:46:05 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
+
      execution: local
-        script: ./samples/produce-consume.js
+        script: ./examples/produce-consume.js
         output: Prometheus remote write (http://localhost:9090/api/v1/write)
 
-     scenarios: (100.00%) 2 scenarios, 50 max VUs, 5m40s max duration (incl. graceful stop):
-              * publish: 333.33 iterations/s for 5m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
-              * consume: 1.67 iterations/s for 5m0s (maxVUs: 5-10, exec: consume, startTime: 10s, gracefulStop: 30s)
+     scenarios: (100.00%) 2 scenarios, 50 max VUs, 1m40s max duration (incl. graceful stop):
+              * publish: 333.33 iterations/s for 1m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
+              * consume: 1.67 iterations/s for 1m0s (maxVUs: 5-10, exec: consume, startTime: 10s, gracefulStop: 30s)
 
-INFO[0000] 2025/05/25 20:46:05 INFO no available channel in pool, creating new one
-INFO[0000] 2025/05/25 20:46:05 INFO exchange created name=test.ex
-INFO[0000] 2025/05/25 20:46:05 INFO queue created name=test.q
-INFO[0000] 2025/05/25 20:46:05 INFO queue binded name=test.q key=test
-INFO[0001] 2025/05/25 20:46:06 INFO no available channel in pool, creating new one
-INFO[0014] 2025/05/25 20:46:20 INFO no available channel in pool, creating new one
-INFO[0023] 2025/05/25 20:46:29 INFO no available channel in pool, creating new one
-INFO[0105] 2025/05/25 20:47:50 INFO no available channel in pool, creating new one
-INFO[0105] 2025/05/25 20:47:50 INFO no available channel in pool, creating new one
-INFO[0105] 2025/05/25 20:47:50 INFO no available channel in pool, creating new one
-INFO[0310] 2025/05/25 20:51:15 INFO Teardown AMQP Client
+INFO[0000] 2026/07/12 12:06:45 INFO no available channel in pool, creating new one
+INFO[0000] 2026/07/12 12:06:45 INFO exchange created name=test.ex
+INFO[0000] 2026/07/12 12:06:45 INFO queue created name=test.q
+INFO[0000] 2026/07/12 12:06:45 INFO queue binded name=test.q key=test
+INFO[0010] 2026/07/12 12:06:55 INFO no available channel in pool, creating new one
+INFO[0070] 2026/07/12 12:07:55 INFO Teardown AMQP Client
 
 
-  █ TOTAL RESULTS
+  █ TOTAL RESULTS 
 
     CUSTOM
-    amqp_pub_sent..............................: 100001 322.499966/s
-    amqp_sub_failed............................: 0      0/s
-    amqp_sub_latency...........................: avg=0        min=0       med=0       max=0        p(90)=0        p(95)=0
-    amqp_sub_no_delivery.......................: 368    1.186788/s
-    amqp_sub_received..........................: 132    0.425696/s
+    amqp_pub_failed........: 0     0/s
+    amqp_pub_sent..........: 20001 285.559672/s
+    amqp_sub_failed........: 0     0/s
+    amqp_sub_no_delivery...: 96    1.370618/s
+    amqp_sub_received......: 4     0.057109/s
 
     EXECUTION
-    iteration_duration.........................: avg=408.92µs min=63.71µs med=314.2µs max=167.92ms p(90)=439.76µs p(95)=482.67µs
-    iterations.................................: 100501 324.11245/s
-    vus........................................: 0      min=0        max=1
-    vus_max....................................: 25     min=25       max=25
+    iteration_duration.....: avg=137µs min=17.81µs med=85.69µs max=8.96ms p(90)=291.56µs p(95)=328.98µs
+    iterations.............: 20101 286.987399/s
+    vus....................: 0     min=0        max=1
+    vus_max................: 25    min=25       max=25
 
     NETWORK
-    data_received..............................: 0 B    0 B/s
-    data_sent..................................: 0 B    0 B/s
+    data_received..........: 0 B   0 B/s
+    data_sent..............: 0 B   0 B/s
 
 
 
 
-running (5m10.1s), 00/25 VUs, 100501 complete and 0 interrupted iterations
-publish ✓ [======================================] 00/20 VUs  5m0s  333.33 iters/s
-consume ✓ [======================================] 00/05 VUs  5m0s  1.67 iters/s
-
+running (1m10.0s), 00/25 VUs, 20101 complete and 0 interrupted iterations
+publish ✓ [======================================] 00/20 VUs  1m0s  333.33 iters/s
+consume ✓ [======================================] 00/05 VUs  1m0s  1.67 iters/s
 ```
 
 ### Check Promethues Metrics in Grafana
