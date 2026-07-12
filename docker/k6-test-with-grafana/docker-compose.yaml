@@ -1,0 +1,40 @@
+networks:
+  prometheus:
+    driver: bridge
+  rabbitmq:
+    driver: bridge
+
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:13.1.0
+    hostname: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v3.13.1
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - prometheus
+    volumes:
+      - type: bind
+        source: ./prometheus.yaml
+        target: /prometheus/prometheus.yaml
+      - type: bind
+        source: ./data/prometheus
+        target: /test
+    command: "--config.file=prometheus.yaml --storage.tsdb.retention.time=60d --web.enable-remote-write-receiver"
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:4.3.2-management-alpine
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - rabbitmq

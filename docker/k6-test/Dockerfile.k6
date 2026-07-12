@@ -1,4 +1,4 @@
-FROM grafana/k6:2.0.0
+FROM grafana/k6:2.1.0
 
 COPY --chmod=0555 ./k6 /usr/bin/k6
 
