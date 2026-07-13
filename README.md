@@ -125,7 +125,7 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.3
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.4
 ```
 
 ```sh
@@ -134,13 +134,13 @@ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.3
 3:54PM INF Creating k6 main
 3:54PM INF adding dependency go.k6.io/k6/v2@v2.1.0
 3:54PM INF importing extensions
-3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.3
+3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.4
 3:54PM INF Building k6
 3:54PM INF Build complete
 3:54PM INF Cleaning up work directory /tmp/k6foundry768369310
 3:54PM INF Successful build platform=linux/amd64
 3:54PM INF added module=go.k6.io/k6/v2 version=v2.1.0
-3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.3
+3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.4
 3:54PM INF A new binary has been built based on k6 version=v2.1.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
