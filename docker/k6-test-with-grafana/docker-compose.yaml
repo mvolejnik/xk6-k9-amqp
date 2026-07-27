@@ -31,7 +31,7 @@ services:
     command: "--config.file=prometheus.yaml --storage.tsdb.retention.time=60d --web.enable-remote-write-receiver"
   rabbitmq:
     container_name: rabbitmq
-    image: rabbitmq:4.3.2-management-alpine
+    image: rabbitmq:4.3.4-management-alpine
     hostname: rabbitmq
     ports:
       - "5672:5672"
