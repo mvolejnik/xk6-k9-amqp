@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/grafana/sobek v0.0.0-20260727154728-7781506a890f
-	github.com/rabbitmq/amqp091-go v1.13.0
+	github.com/rabbitmq/amqp091-go v1.14.0
 	go.k6.io/k6/v2 v2.2.0
 )
 
