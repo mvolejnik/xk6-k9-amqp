@@ -34,6 +34,7 @@ How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote wr
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
 
+- v2.3.0
 - v2.1.0
 - v2.0.0
 
@@ -125,23 +126,23 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.4
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.5
 ```
 
 ```sh
 3:54PM INF Building new k6 binary (native)
 3:54PM INF Initializing Go module
 3:54PM INF Creating k6 main
-3:54PM INF adding dependency go.k6.io/k6/v2@v2.1.0
+3:54PM INF adding dependency go.k6.io/k6/v2@v2.3.0
 3:54PM INF importing extensions
-3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.4
+3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.5
 3:54PM INF Building k6
 3:54PM INF Build complete
 3:54PM INF Cleaning up work directory /tmp/k6foundry768369310
 3:54PM INF Successful build platform=linux/amd64
-3:54PM INF added module=go.k6.io/k6/v2 version=v2.1.0
-3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.4
-3:54PM INF A new binary has been built based on k6 version=v2.1.0
+3:54PM INF added module=go.k6.io/k6/v2 version=v2.3.0
+3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.5
+3:54PM INF A new binary has been built based on k6 version=v2.3.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
 Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amqp' directory.
@@ -153,7 +154,7 @@ Verify:
 ```
 
 ```sh
-k6 v2.1.0 (go1.26.3, linux/amd64)
+k6 v2.3.0 (go1.26.3, linux/amd64)
 Extensions:
   xk6-k9-amqp (devel), k6/x/k9amqp [js]
   xk6-k9-amqp (devel), k6/x/k9amqp/exchange [js]
@@ -176,22 +177,23 @@ $ ./build.sh
 ```
 
 ```sh
-11:21AM INF Building new k6 binary (native)
-11:21AM INF Initializing Go module
-11:21AM INF Creating k6 main
-11:21AM INF adding dependency go.k6.io/k6/v2@v2.1.0
-11:21AM INF importing extensions
-11:21AM INF adding dependency xk6-k9-amqp => .
-11:21AM INF Building k6
-11:21AM INF Build complete
-11:21AM INF Cleaning up work directory /tmp/k6foundry1002671912
-11:21AM INF Successful build platform=linux/amd64
-11:21AM INF added module=go.k6.io/k6/v2 version=v2.1.0
-11:21AM INF added module=xk6-k9-amqp version=v0.0.0-00010101000000-000000000000
-11:21AM INF A new binary has been built based on k6 version=v2.1.0
+2:15PM INF Building new k6 binary (native)
+2:15PM INF Initializing Go module
+2:15PM INF Creating k6 main
+2:15PM INF adding dependency go.k6.io/k6/v2@v2.3.0
+2:15PM INF importing extensions
+2:15PM INF adding dependency xk6-k9-amqp => .
+2:15PM INF Building k6
+2:15PM INF Build complete
+2:15PM INF Cleaning up work directory /tmp/k6foundry912268475
+2:15PM INF Successful build platform=linux/amd64
+2:15PM INF added module=go.k6.io/k6/v2 version=v2.3.0
+2:15PM INF added module=xk6-k9-amqp version=v0.0.0-00010101000000-000000000000
+2:15PM INF A new binary has been built based on k6 version=v2.3.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
 Be sure to run './k6 run <SCRIPT_NAME>' from the '/home/mvolejnik/Git/xk6-k9-amqp' directory.
+
 ```
 
 ### Run RqbbitMQ
@@ -201,45 +203,29 @@ sudo docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management-alpine
 ```
 
 ```sh
-Unable to find image 'rabbitmq:3-management-alpine' locally
-3-management-alpine: Pulling from library/rabbitmq
-2d35ebdb57d9: Pull complete 
-9ab46c560811: Pull complete 
-7f4fe0a74327: Pull complete 
-fe0979840307: Pull complete 
-5541f4a1e9a3: Pull complete 
-f7900ae6286e: Pull complete 
-64a815d19254: Pull complete 
-5a8ebb2679b2: Pull complete 
-3fdf1da6c087: Pull complete 
-3c428bdb4834: Pull complete 
-63aa2505d58f: Download complete 
-1fd50e0483ed: Download complete 
-Digest: sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
-Status: Downloaded newer image for rabbitmq:3-management-alpine
-2026-07-12 09:24:39.652310+00:00 [notice] <0.44.0> Application syslog exited with reason: stopped
-2026-07-12 09:24:39.655537+00:00 [notice] <0.254.0> Logging: switching to configured handler(s); following messages may not be visible in this log output
-2026-07-12 09:24:39.656090+00:00 [notice] <0.254.0> Logging: configured log handlers are now ACTIVE
-2026-07-12 09:24:39.660940+00:00 [info] <0.254.0> ra: starting system quorum_queues
-2026-07-12 09:24:39.661022+00:00 [info] <0.254.0> starting Ra system: quorum_queues in directory: /var/lib/rabbitmq/mnesia/rabbit@6acf2ba0b401/quorum/rabbit@6acf2ba0b401
-2026-07-12 09:24:39.686031+00:00 [info] <0.268.0> ra system 'quorum_queues' running pre init for 0 registered servers
-2026-07-12 09:24:39.690044+00:00 [info] <0.269.0> ra: meta data store initialised for system quorum_queues. 0 record(s) recovered
-2026-07-12 09:24:39.696235+00:00 [notice] <0.274.0> WAL: ra_log_wal init, open tbls: ra_log_open_mem_tables, closed tbls: ra_log_closed_mem_tables
-2026-07-12 09:24:39.707416+00:00 [info] <0.254.0> ra: starting system coordination
-2026-07-12 09:24:39.707466+00:00 [info] <0.254.0> starting Ra system: coordination in directory: /var/lib/rabbitmq/mnesia/rabbit@6acf2ba0b401/coordination/rabbit@6acf2ba0b401
-2026-07-12 09:24:39.708058+00:00 [info] <0.282.0> ra system 'coordination' running pre init for 0 registered servers
-2026-07-12 09:24:39.708326+00:00 [info] <0.283.0> ra: meta data store initialised for system coordination. 0 record(s) recovered
-2026-07-12 09:24:39.708416+00:00 [notice] <0.288.0> WAL: ra_coordination_log_wal init, open tbls: ra_coordination_log_open_mem_tables, closed tbls: ra_coordination_log_closed_mem_tables
-2026-07-12 09:24:39.709690+00:00 [info] <0.254.0> ra: starting system coordination
-2026-07-12 09:24:39.709713+00:00 [info] <0.254.0> starting Ra system: coordination in directory: /var/lib/rabbitmq/mnesia/rabbit@6acf2ba0b401/coordination/rabbit@6acf2ba0b401
-2026-07-12 09:24:39.752807+00:00 [info] <0.254.0> Waiting for Khepri leader for 30000 ms, 9 retries left
-2026-07-12 09:24:39.756983+00:00 [notice] <0.292.0> RabbitMQ metadata store: candidate -> leader in term: 1 machine version: 1
-2026-07-12 09:24:39.760325+00:00 [info] <0.254.0> Khepri leader elected
-2026-07-12 09:24:39.760385+00:00 [info] <0.254.0> Waiting for Khepri projections for 30000 ms, 9 retries left
-2026-07-12 09:24:39.897774+00:00 [info] <0.254.0> 
-2026-07-12 09:24:39.897774+00:00 [info] <0.254.0>  Starting RabbitMQ 3.13.7 on Erlang 26.2.5.16 [jit]
-2026-07-12 09:24:39.897774+00:00 [info] <0.254.0>  Copyright (c) 2007-2024 Broadcom Inc and/or its subsidiaries
-2026-07-12 09:24:39.897774+00:00 [info] <0.254.0>  Licensed under the MPL 2.0. Website: https://rabbitmq.com
+2026-10-24 12:16:57.817740+00:00 [notice] <0.44.0> Application syslog exited with reason: stopped
+2026-10-24 12:16:57.819526+00:00 [notice] <0.254.0> Logging: switching to configured handler(s); following messages may not be visible in this log output
+2026-10-24 12:16:57.819932+00:00 [notice] <0.254.0> Logging: configured log handlers are now ACTIVE
+2026-10-24 12:16:57.824233+00:00 [info] <0.254.0> ra: starting system quorum_queues
+2026-10-24 12:16:57.824288+00:00 [info] <0.254.0> starting Ra system: quorum_queues in directory: /var/lib/rabbitmq/mnesia/rabbit@7f0b8a665d29/quorum/rabbit@7f0b8a665d29
+2026-10-24 12:16:57.843819+00:00 [info] <0.268.0> ra system 'quorum_queues' running pre init for 0 registered servers
+2026-10-24 12:16:57.846523+00:00 [info] <0.269.0> ra: meta data store initialised for system quorum_queues. 0 record(s) recovered
+2026-10-24 12:16:57.850380+00:00 [notice] <0.274.0> WAL: ra_log_wal init, open tbls: ra_log_open_mem_tables, closed tbls: ra_log_closed_mem_tables
+2026-10-24 12:16:57.854408+00:00 [info] <0.254.0> ra: starting system coordination
+2026-10-24 12:16:57.854433+00:00 [info] <0.254.0> starting Ra system: coordination in directory: /var/lib/rabbitmq/mnesia/rabbit@7f0b8a665d29/coordination/rabbit@7f0b8a665d29
+2026-10-24 12:16:57.854882+00:00 [info] <0.282.0> ra system 'coordination' running pre init for 0 registered servers
+2026-10-24 12:16:57.855103+00:00 [info] <0.283.0> ra: meta data store initialised for system coordination. 0 record(s) recovered
+2026-10-24 12:16:57.855178+00:00 [notice] <0.288.0> WAL: ra_coordination_log_wal init, open tbls: ra_coordination_log_open_mem_tables, closed tbls: ra_coordination_log_closed_mem_tables
+2026-10-24 12:16:57.856142+00:00 [info] <0.254.0> ra: starting system coordination
+2026-10-24 12:16:57.856163+00:00 [info] <0.254.0> starting Ra system: coordination in directory: /var/lib/rabbitmq/mnesia/rabbit@7f0b8a665d29/coordination/rabbit@7f0b8a665d29
+2026-10-24 12:16:57.886954+00:00 [info] <0.254.0> Waiting for Khepri leader for 30000 ms, 9 retries left
+2026-10-24 12:16:57.889639+00:00 [notice] <0.292.0> RabbitMQ metadata store: candidate -> leader in term: 1 machine version: 1
+2026-10-24 12:16:57.892707+00:00 [info] <0.254.0> Khepri leader elected
+2026-10-24 12:16:57.892748+00:00 [info] <0.254.0> Waiting for Khepri projections for 30000 ms, 9 retries left
+2026-10-24 12:16:57.988845+00:00 [info] <0.254.0> 
+2026-10-24 12:16:57.988845+00:00 [info] <0.254.0>  Starting RabbitMQ 3.13.7 on Erlang 26.2.5.16 [jit]
+2026-10-24 12:16:57.988845+00:00 [info] <0.254.0>  Copyright (c) 2007-2024 Broadcom Inc and/or its subsidiaries
+2026-10-24 12:16:57.988845+00:00 [info] <0.254.0>  Licensed under the MPL 2.0. Website: https://rabbitmq.com
 
   ##  ##      RabbitMQ 3.13.7
   ##  ##
@@ -261,46 +247,46 @@ Status: Downloaded newer image for rabbitmq:3-management-alpine
 
   Config file(s): /etc/rabbitmq/conf.d/10-defaults.conf
 
-  Starting broker...2026-07-12 09:24:39.898319+00:00 [info] <0.254.0> 
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  node           : rabbit@6acf2ba0b401
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  home dir       : /var/lib/rabbitmq
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  config file(s) : /etc/rabbitmq/conf.d/10-defaults.conf
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  cookie hash    : Msc4Kn/v2NH8H+MCUO2R0w==
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  log(s)         : <stdout>
-2026-07-12 09:24:39.898319+00:00 [info] <0.254.0>  data dir       : /var/lib/rabbitmq/mnesia/rabbit@6acf2ba0b401
-2026-07-12 09:24:40.109907+00:00 [info] <0.254.0> Running boot step pre_boot defined by app rabbit
-2026-07-12 09:24:40.109963+00:00 [info] <0.254.0> Running boot step rabbit_global_counters defined by app rabbit
-2026-07-12 09:24:40.110191+00:00 [info] <0.254.0> Running boot step rabbit_osiris_metrics defined by app rabbit
-2026-07-12 09:24:40.110296+00:00 [info] <0.254.0> Running boot step rabbit_core_metrics defined by app rabbit
-2026-07-12 09:24:40.110881+00:00 [info] <0.254.0> Running boot step rabbit_alarm defined by app rabbit
-2026-07-12 09:24:40.116698+00:00 [info] <0.329.0> Memory high watermark set to 12343 MiB (12942662041 bytes) of 30857 MiB (32356655104 bytes) total
-2026-07-12 09:24:40.118275+00:00 [info] <0.331.0> Enabling free disk space monitoring (disk free space: 830262673408, total memory: 32356655104)
-2026-07-12 09:24:40.118303+00:00 [info] <0.331.0> Disk free limit set to 50MB
-2026-07-12 09:24:40.118874+00:00 [info] <0.254.0> Running boot step code_server_cache defined by app rabbit
-2026-07-12 09:24:40.118918+00:00 [info] <0.254.0> Running boot step file_handle_cache defined by app rabbit
-2026-07-12 09:24:40.122481+00:00 [info] <0.334.0> Limiting to approx 927 file handles (832 sockets)
-2026-07-12 09:24:40.122586+00:00 [info] <0.335.0> FHC read buffering: OFF
-2026-07-12 09:24:40.122615+00:00 [info] <0.335.0> FHC write buffering: ON
-2026-07-12 09:24:40.122744+00:00 [info] <0.254.0> Running boot step worker_pool defined by app rabbit
-2026-07-12 09:24:40.122769+00:00 [info] <0.315.0> Will use 16 processes for default worker pool
-2026-07-12 09:24:40.122788+00:00 [info] <0.315.0> Starting worker pool 'worker_pool' with 16 processes in it
-2026-07-12 09:24:40.123174+00:00 [info] <0.254.0> Running boot step database defined by app rabbit
-2026-07-12 09:24:40.123305+00:00 [info] <0.254.0> Peer discovery: configured backend: rabbit_peer_discovery_classic_config
+  Starting broker...2026-10-24 12:16:57.989201+00:00 [info] <0.254.0> 
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  node           : rabbit@7f0b8a665d29
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  home dir       : /var/lib/rabbitmq
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  config file(s) : /etc/rabbitmq/conf.d/10-defaults.conf
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  cookie hash    : Qe0uXYE5DjaULG5jDveVdA==
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  log(s)         : <stdout>
+2026-10-24 12:16:57.989201+00:00 [info] <0.254.0>  data dir       : /var/lib/rabbitmq/mnesia/rabbit@7f0b8a665d29
+2026-10-24 12:16:58.123522+00:00 [info] <0.254.0> Running boot step pre_boot defined by app rabbit
+2026-10-24 12:16:58.123567+00:00 [info] <0.254.0> Running boot step rabbit_global_counters defined by app rabbit
+2026-10-24 12:16:58.123696+00:00 [info] <0.254.0> Running boot step rabbit_osiris_metrics defined by app rabbit
+2026-10-24 12:16:58.123749+00:00 [info] <0.254.0> Running boot step rabbit_core_metrics defined by app rabbit
+2026-10-24 12:16:58.124069+00:00 [info] <0.254.0> Running boot step rabbit_alarm defined by app rabbit
+2026-10-24 12:16:58.129367+00:00 [info] <0.329.0> Memory high watermark set to 12342 MiB (12942041088 bytes) of 30856 MiB (32355102720 bytes) total
+2026-10-24 12:16:58.130445+00:00 [info] <0.331.0> Enabling free disk space monitoring (disk free space: 802060390400, total memory: 32355102720)
+2026-10-24 12:16:58.130465+00:00 [info] <0.331.0> Disk free limit set to 50MB
+2026-10-24 12:16:58.131166+00:00 [info] <0.254.0> Running boot step code_server_cache defined by app rabbit
+2026-10-24 12:16:58.131184+00:00 [info] <0.254.0> Running boot step file_handle_cache defined by app rabbit
+2026-10-24 12:16:58.133448+00:00 [info] <0.334.0> Limiting to approx 927 file handles (832 sockets)
+2026-10-24 12:16:58.133508+00:00 [info] <0.335.0> FHC read buffering: OFF
+2026-10-24 12:16:58.133523+00:00 [info] <0.335.0> FHC write buffering: ON
+2026-10-24 12:16:58.133775+00:00 [info] <0.254.0> Running boot step worker_pool defined by app rabbit
+2026-10-24 12:16:58.133792+00:00 [info] <0.315.0> Will use 16 processes for default worker pool
+2026-10-24 12:16:58.133807+00:00 [info] <0.315.0> Starting worker pool 'worker_pool' with 16 processes in it
+2026-10-24 12:16:58.134025+00:00 [info] <0.254.0> Running boot step database defined by app rabbit
+2026-10-24 12:16:58.134107+00:00 [info] <0.254.0> Peer discovery: configured backend: rabbit_peer_discovery_classic_config
 .....
-2026-07-12 09:24:41.644366+00:00 [info] <0.770.0> Management plugin: HTTP (non-TLS) listener started on port 15672
-2026-07-12 09:24:41.644476+00:00 [info] <0.800.0> Statistics database started.
-2026-07-12 09:24:41.644523+00:00 [info] <0.799.0> Starting worker pool 'management_worker_pool' with 3 processes in it
-2026-07-12 09:24:41.650297+00:00 [info] <0.818.0> Prometheus metrics: HTTP (non-TLS) listener started on port 15692
-2026-07-12 09:24:41.650389+00:00 [info] <0.704.0> Ready to start client connection listeners
-2026-07-12 09:24:41.651291+00:00 [info] <0.862.0> started TCP listener on [::]:5672
+2026-10-24 12:16:59.485702+00:00 [info] <0.770.0> Management plugin: HTTP (non-TLS) listener started on port 15672
+2026-10-24 12:16:59.485815+00:00 [info] <0.800.0> Statistics database started.
+2026-10-24 12:16:59.485856+00:00 [info] <0.799.0> Starting worker pool 'management_worker_pool' with 3 processes in it
+2026-10-24 12:16:59.494752+00:00 [info] <0.818.0> Prometheus metrics: HTTP (non-TLS) listener started on port 15692
+2026-10-24 12:16:59.494839+00:00 [info] <0.704.0> Ready to start client connection listeners
+2026-10-24 12:16:59.495489+00:00 [info] <0.862.0> started TCP listener on [::]:5672
  completed with 5 plugins.
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0> Server startup complete; 5 plugins started.
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0>  * rabbitmq_prometheus
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0>  * rabbitmq_federation
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0>  * rabbitmq_management
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0>  * rabbitmq_management_agent
-2026-07-12 09:24:41.679545+00:00 [info] <0.704.0>  * rabbitmq_web_dispatch
-2026-07-12 09:24:41.875025+00:00 [info] <0.9.0> Time to start RabbitMQ: 3559 ms
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0> Server startup complete; 5 plugins started.
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0>  * rabbitmq_prometheus
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0>  * rabbitmq_federation
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0>  * rabbitmq_management
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0>  * rabbitmq_management_agent
+2026-10-24 12:16:59.517184+00:00 [info] <0.704.0>  * rabbitmq_web_dispatch
+2026-10-24 12:16:59.562359+00:00 [info] <0.9.0> Time to start RabbitMQ: 2900 ms
 ```
 
 #### Run Simple Sample
@@ -311,10 +297,10 @@ Status: Downloaded newer image for rabbitmq:3-management-alpine
 ```
 
 ```sh
-INFO[0000] 2026/07/12 11:27:37 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10}
+INFO[0000] 2026/10/24 14:19:23 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10}
 
          /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  / 
+    /\  /  \     |\  __   /  /  
    /  \/    \    | |/ /  /   ‾‾\
   /          \   |   (  |  (‾)  |
  / __________ \  |_|\_\  \_____/
@@ -327,36 +313,36 @@ INFO[0000] 2026/07/12 11:27:37 INFO init amqp client with pool {ChannelsPerConn:
      scenarios: (100.00%) 1 scenario, 10 max VUs, 1m0s max duration (incl. graceful stop):
               * default: 10 looping VUs for 30s (gracefulStop: 30s)
 
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO exchange created name=test.ex
-INFO[0000] 2026/07/12 11:27:37 INFO queue created name=test.q
-INFO[0000] 2026/07/12 11:27:37 INFO queue binded name=test.q key=test
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:27:37 INFO no available channel in pool, creating new one
-INFO[0030] 2026/07/12 11:28:07 INFO queue deleted name=test.q
-INFO[0030] 2026/07/12 11:28:07 INFO exchange deleted name=test.ex
-INFO[0030] 2026/07/12 11:28:07 INFO Teardown AMQP Client
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO exchange created name=test.ex
+INFO[0000] 2026/10/24 14:19:23 INFO queue created name=test.q
+INFO[0000] 2026/10/24 14:19:23 INFO queue binded name=test.q key=test
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
+INFO[0030] 2026/10/24 14:19:53 INFO queue deleted name=test.q
+INFO[0030] 2026/10/24 14:19:53 INFO exchange deleted name=test.ex
+INFO[0030] 2026/10/24 14:19:53 INFO Teardown AMQP Client
 
 
   █ TOTAL RESULTS
 
     CUSTOM
     amqp_pub_failed........: 0    0/s
-    amqp_pub_sent..........: 5750 191.067308/s
+    amqp_pub_sent..........: 5780 192.298906/s
     amqp_sub_failed........: 0    0/s
-    amqp_sub_no_delivery...: 5750 191.067308/s
-    amqp_sub_received......: 5750 191.067308/s
+    amqp_sub_no_delivery...: 5780 192.298906/s
+    amqp_sub_received......: 5780 192.298906/s
 
     EXECUTION
-    iteration_duration.....: avg=52.21ms min=50.41ms med=52.17ms max=56.13ms p(90)=52.71ms p(95)=52.86ms
-    iterations.............: 5750 191.067308/s
+    iteration_duration.....: avg=51.94ms min=50.9ms med=51.92ms max=55.26ms p(90)=52.42ms p(95)=52.52ms
+    iterations.............: 5780 192.298906/s
     vus....................: 10   min=10       max=10
     vus_max................: 10   min=10       max=10
 
@@ -367,7 +353,7 @@ INFO[0030] 2026/07/12 11:28:07 INFO Teardown AMQP Client
 
 
 
-running (0m30.1s), 00/10 VUs, 5750 complete and 0 interrupted iterations
+running (0m30.1s), 00/10 VUs, 5780 complete and 0 interrupted iterations
 default ✓ [======================================] 10 VUs  30s
 ```
 
@@ -494,13 +480,13 @@ function toSeconds(duration) {
 ```
 
 ```sh
-INFO[0000] 2026/07/12 11:29:16 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
+INFO[0000] 2026/10/24 14:21:20 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
 
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /  
-   /  \/    \    | |/ /  /   ‾‾\
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
   /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
+ / __________ \  |_|\_\  \_____/ 
 
 
      execution: local
@@ -511,24 +497,24 @@ INFO[0000] 2026/07/12 11:29:16 INFO init amqp client with pool {ChannelsPerConn:
               * consume: 2 looping VUs for 1m10s (exec: consume, gracefulStop: 30s)
               * publish: 333.33 iterations/s for 1m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
 
-INFO[0000] 2026/07/12 11:29:16 INFO no available channel in pool, creating new one
-INFO[0000] 2026/07/12 11:29:17 INFO exchange created name=test.ex
-INFO[0000] 2026/07/12 11:29:17 INFO queue created name=test.q
-INFO[0000] 2026/07/12 11:29:17 INFO queue binded name=test.q key=test
-INFO[0070] Consumer [4] consumed 9997 messages           source=console
-INFO[0070] Consumer [12] consumed 10003 messages         source=console
-INFO[0070] 2026/07/12 11:30:27 INFO Teardown AMQP Client
+INFO[0000] 2026/10/24 14:21:20 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/10/24 14:21:20 INFO exchange created name=test.ex 
+INFO[0000] 2026/10/24 14:21:20 INFO queue created name=test.q 
+INFO[0000] 2026/10/24 14:21:20 INFO queue binded name=test.q key=test 
+INFO[0070] Consumer [1] consumed 10002 messages          source=console
+INFO[0070] Consumer [4] consumed 9999 messages           source=console
+INFO[0070] 2026/10/24 14:22:30 INFO Teardown AMQP Client 
 
 
-  █ TOTAL RESULTS
+  █ TOTAL RESULTS 
 
     CUSTOM
     amqp_pub_failed......: 0     0/s
-    amqp_pub_sent........: 20001 285.386009/s
+    amqp_pub_sent........: 20001 285.433799/s
 
     EXECUTION
-    iteration_duration...: avg=7.06ms min=15.14µs med=57.5µs max=1m10s p(90)=107.14µs p(95)=128.18µs
-    iterations...........: 20003 285.414546/s
+    iteration_duration...: avg=7.06ms min=16.8µs med=57.19µs max=1m10s p(90)=110.21µs p(95)=130.99µs
+    iterations...........: 20003 285.462341/s
     vus..................: 2     min=2        max=3 
     vus_max..............: 22    min=22       max=22
 
@@ -542,5 +528,4 @@ INFO[0070] 2026/07/12 11:30:27 INFO Teardown AMQP Client
 running (1m10.1s), 00/22 VUs, 20003 complete and 0 interrupted iterations
 consume ✓ [======================================] 2 VUs      1m10s
 publish ✓ [======================================] 00/20 VUs  1m0s  333.33 iters/s
-
 ```
