@@ -8,11 +8,10 @@ import (
 type amqpMetrics struct {
 	PublishSent       *metrics.Metric
 	PublishFailed     *metrics.Metric
-	PublishLatency    *metrics.Metric
+	PublishDuration   *metrics.Metric
 	ConsumeReceived   *metrics.Metric
 	ConsumeNoDelivery *metrics.Metric
 	ConsumeFailed     *metrics.Metric
-	ConsumeLatency    *metrics.Metric
 }
 
 func registerMetrics(vu modules.VU) (amqpMetrics, error) {
@@ -27,7 +26,7 @@ func registerMetrics(vu modules.VU) (amqpMetrics, error) {
 	if err != nil {
 		return m, err
 	}
-	m.PublishLatency, err = registry.NewMetric("amqp_pub_latency", metrics.Trend)
+	m.PublishDuration, err = registry.NewMetric("amqp_pub_duration", metrics.Trend, metrics.Time)
 	if err != nil {
 		return m, err
 	}
@@ -40,10 +39,6 @@ func registerMetrics(vu modules.VU) (amqpMetrics, error) {
 		return m, err
 	}
 	m.ConsumeFailed, err = registry.NewMetric("amqp_sub_failed", metrics.Counter)
-	if err != nil {
-		return m, err
-	}
-	m.ConsumeLatency, err = registry.NewMetric("amqp_sub_latency", metrics.Trend)
 	if err != nil {
 		return m, err
 	}

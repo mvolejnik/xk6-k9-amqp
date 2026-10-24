@@ -3,7 +3,7 @@
 // 1. Standalone/Global Types (No 'export' at the root level)
 interface Table { [key: string]: any; }
 interface AmqpOptions { host?: string; port?: number; vhost?: string; username?: string; password?: string; }
-interface PoolOptions { channels_per_conn?: number; channels_cache_size?: number; }
+interface PoolOptions { channels_per_conn?: number; channels_cache_size?: number; no_confirm?: boolean; }
 interface Publishing { content_type?: string; content_encoding?: string; delivery_mode?: number; priority?: number; correlation_id?: string; reply_to?: string; expiration?: string; message_id?: string; timestamp?: Date; type?: string; user_id?: string; app_id?: string; headers?: Table; body: string | ArrayBuffer; }
 interface Delivery { Acknowledger: any; Headers: Table; ContentType: string; ContentEncoding: string; DeliveryMode: number; Priority: number; CorrelationId: string; ReplyTo: string; Expiration: string; MessageId: string; Timestamp: Date; Type: string; UserId: string; AppId: string; ConsumerTag: string; MessageCount: number; DeliveryTag: number; Redelivered: boolean; Exchange: string; RoutingKey: string; Body: string | ArrayBuffer; }
 interface PublishOptions { exchange: string; key: string; mandatory?: boolean; immediate?: boolean; }

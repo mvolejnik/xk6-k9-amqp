@@ -1,6 +1,7 @@
 package k9amqp
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -14,6 +15,9 @@ import (
 )
 
 var amqpClient *AmqpClient
+
+// ErrPublishNack is returned when broker negatively acknowledges published message (publisher confirms).
+var ErrPublishNack = errors.New("message nacked by broker")
 var once sync.Once
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -71,6 +75,7 @@ func (client *Client) init(amqpOptions AmqpOptions, poolOptions PoolOptions) err
 
 func (client *Client) Teardown() {
 	slog.Info("Teardown AMQP Client")
+	client.k9amqp.reportDataMetrics(client)
 	if err := client.amqpClient.close(); err != nil {
 		slog.Error("failed to close amqp client(s)")
 	}
@@ -85,7 +90,8 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 		return AmqpProduceResponse{Error: true, ErrorMessage: err.Error()}, err
 	}
 	defer func() {
-		if err == nil {
+		// nack doesn't close the channel, it can be reused
+		if err == nil || errors.Is(err, ErrPublishNack) {
 			if putErr := client.amqpClient.channels.put(channel, err); putErr != nil {
 				slog.Error("failed to return channel to pool", "error", putErr)
 			}
@@ -111,15 +117,26 @@ func (client *Client) Publish(opts PublishOptions, msg amqp.Publishing) (AmqpPro
 	return response, nil
 }
 
-func (*Client) publish(channel *amqp.Channel, opts PublishOptions, msg amqp.Publishing) (time.Duration, error) {
+// publish waits for broker confirmation when channel is in confirm mode,
+// otherwise duration covers just writing the message to the socket.
+func (client *Client) publish(channel *amqp.Channel, opts PublishOptions, msg amqp.Publishing) (time.Duration, error) {
+	ctx := client.k9amqp.vu.Context()
 	startTime := time.Now()
-	err := channel.Publish(
+	confirmation, err := channel.PublishWithDeferredConfirmWithContext(
+		ctx,
 		opts.Exchange,
 		opts.Key,
 		opts.Mandatory,
 		opts.Immediate,
 		msg,
 	)
+	if err == nil && confirmation != nil {
+		var acked bool
+		acked, err = confirmation.WaitContext(ctx)
+		if err == nil && !acked {
+			err = ErrPublishNack
+		}
+	}
 	duration := time.Since(startTime)
 	return duration, err
 }
@@ -280,12 +297,12 @@ func (client *Client) Listen(opts ListenOptions, listener ListenerType) error {
 }
 
 func (k9amqp *K9amqp) reportPublishMetrics(client *Client, opts PublishOptions, resp AmqpProduceResponse, duration time.Duration) error {
-	now := time.Now()
-	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
-	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
+	tags := k9amqp.endpointTags(client)
+	if tags == nil {
+		return nil
+	}
 	tags = tags.With("exchange", opts.Exchange)
 	tags = tags.With("routing_key", opts.Key)
-	ctx := k9amqp.vu.Context()
 	var sent int
 	var failed int
 	if resp.Error {
@@ -293,36 +310,20 @@ func (k9amqp *K9amqp) reportPublishMetrics(client *Client, opts PublishOptions, 
 	} else {
 		sent = 1
 	}
-	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
-		Samples: []metrics.Sample{
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.PublishSent,
-					Tags:   tags,
-				},
-				Value:    float64(sent),
-				Metadata: ctm.Metadata,
-			},
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.PublishFailed,
-					Tags:   tags,
-				},
-				Value:    float64(failed),
-				Metadata: ctm.Metadata,
-			},
-		},
-	})
+	k9amqp.push(
+		k9amqp.sample(k9amqp.metrics.PublishSent, tags, float64(sent)),
+		k9amqp.sample(k9amqp.metrics.PublishFailed, tags, float64(failed)),
+		k9amqp.sample(k9amqp.metrics.PublishDuration, tags, metrics.D(duration)),
+	)
+	k9amqp.reportDataMetrics(client)
 	return nil
 }
 
 func (k9amqp *K9amqp) reportGetMetrics(client *Client, resp AmqpGetResponse) error {
-	now := time.Now()
-	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
-	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
-	ctx := k9amqp.vu.Context()
+	tags := k9amqp.endpointTags(client)
+	if tags == nil {
+		return nil
+	}
 	tags = k9amqp.metricsTags(tags, &resp.Delivery)
 	var received int
 	var noDelivery int
@@ -334,50 +335,25 @@ func (k9amqp *K9amqp) reportGetMetrics(client *Client, resp AmqpGetResponse) err
 	} else if !resp.Ok {
 		noDelivery = 1
 	}
-	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
-		Samples: []metrics.Sample{
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeReceived,
-					Tags:   tags,
-				},
-				Value:    float64(received),
-				Metadata: ctm.Metadata,
-			},
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeNoDelivery,
-					Tags:   tags,
-				},
-				Value:    float64(noDelivery),
-				Metadata: ctm.Metadata,
-			},
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeFailed,
-					Tags:   tags,
-				},
-				Value:    float64(failed),
-				Metadata: ctm.Metadata,
-			},
-		},
-	})
+	k9amqp.push(
+		k9amqp.sample(k9amqp.metrics.ConsumeReceived, tags, float64(received)),
+		k9amqp.sample(k9amqp.metrics.ConsumeNoDelivery, tags, float64(noDelivery)),
+		k9amqp.sample(k9amqp.metrics.ConsumeFailed, tags, float64(failed)),
+	)
+	k9amqp.reportDataMetrics(client)
 	return nil
 }
 
 func (k9amqp *K9amqp) reportConsumeMetrics(client *Client, resp AmqpConsumeResponse) error {
-	now := time.Now()
-	ctm := k9amqp.vu.State().Tags.GetCurrentValues()
+	tags := k9amqp.endpointTags(client)
+	if tags == nil {
+		return nil
+	}
 	var delivery *amqp.Delivery
 	if len(resp.Deliveries) > 0 {
 		delivery = &resp.Deliveries[0]
 	}
-	tags := ctm.Tags.With("endpoint", fmt.Sprintf("amqp://%s@%s:%d/%s", client.amqpClient.amqpOptions.Username, client.amqpClient.amqpOptions.Host, client.amqpClient.amqpOptions.Port, client.amqpClient.amqpOptions.Vhost))
 	tags = k9amqp.metricsTags(tags, delivery)
-	ctx := k9amqp.vu.Context()
 	var noDelivery int
 	var failed int
 	received := len(resp.Deliveries)
@@ -386,38 +362,60 @@ func (k9amqp *K9amqp) reportConsumeMetrics(client *Client, resp AmqpConsumeRespo
 	} else if !resp.Ok {
 		noDelivery = 1
 	}
-	metrics.PushIfNotDone(ctx, k9amqp.vu.State().Samples, metrics.ConnectedSamples{
-		Samples: []metrics.Sample{
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeReceived,
-					Tags:   tags,
-				},
-				Value:    float64(received),
-				Metadata: ctm.Metadata,
-			},
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeNoDelivery,
-					Tags:   tags,
-				},
-				Value:    float64(noDelivery),
-				Metadata: ctm.Metadata,
-			},
-			{
-				Time: now,
-				TimeSeries: metrics.TimeSeries{
-					Metric: k9amqp.metrics.ConsumeFailed,
-					Tags:   tags,
-				},
-				Value:    float64(failed),
-				Metadata: ctm.Metadata,
-			},
-		},
-	})
+	k9amqp.push(
+		k9amqp.sample(k9amqp.metrics.ConsumeReceived, tags, float64(received)),
+		k9amqp.sample(k9amqp.metrics.ConsumeNoDelivery, tags, float64(noDelivery)),
+		k9amqp.sample(k9amqp.metrics.ConsumeFailed, tags, float64(failed)),
+	)
+	k9amqp.reportDataMetrics(client)
 	return nil
+}
+
+// reportDataMetrics pushes bytes sent/received on the wire by all AMQP connections
+// since the last report into k6 builtin data_sent/data_received metrics.
+// Counters are global (shared by all VUs), whichever VU reports first takes the delta.
+func (k9amqp *K9amqp) reportDataMetrics(client *Client) {
+	state := k9amqp.vu.State()
+	if state == nil || client.amqpClient == nil {
+		return
+	}
+	sent := client.amqpClient.bytesSent.Swap(0)
+	received := client.amqpClient.bytesReceived.Swap(0)
+	if sent == 0 && received == 0 {
+		return
+	}
+	tags := state.Tags.GetCurrentValues().Tags
+	k9amqp.push(
+		k9amqp.sample(state.BuiltinMetrics.DataSent, tags, float64(sent)),
+		k9amqp.sample(state.BuiltinMetrics.DataReceived, tags, float64(received)),
+	)
+}
+
+// endpointTags returns current VU tags with 'endpoint' tag, nil outside of VU context.
+func (k9amqp *K9amqp) endpointTags(client *Client) *metrics.TagSet {
+	state := k9amqp.vu.State()
+	if state == nil {
+		return nil
+	}
+	return state.Tags.GetCurrentValues().Tags.With("endpoint", client.amqpClient.endpoint)
+}
+
+func (k9amqp *K9amqp) sample(metric *metrics.Metric, tags *metrics.TagSet, value float64) metrics.Sample {
+	return metrics.Sample{
+		Time: time.Now(),
+		TimeSeries: metrics.TimeSeries{
+			Metric: metric,
+			Tags:   tags,
+		},
+		Value:    value,
+		Metadata: k9amqp.vu.State().Tags.GetCurrentValues().Metadata,
+	}
+}
+
+func (k9amqp *K9amqp) push(samples ...metrics.Sample) {
+	metrics.PushIfNotDone(k9amqp.vu.Context(), k9amqp.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: samples,
+	})
 }
 
 func randString(length int) string {

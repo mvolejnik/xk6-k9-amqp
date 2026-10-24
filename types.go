@@ -14,6 +14,7 @@ type (
 	PoolOptions struct {
 		ChannelsPerConn   int
 		ChannelsCacheSize int
+		NoConfirm         bool
 	}
 
 	Queue struct {
