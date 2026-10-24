@@ -24,7 +24,6 @@ const poolOptions = {
 const client = new k9amqp.Client(amqpOptions, poolOptions)
 
 export function setup() {
-  const client = new k9amqp.Client()
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   exchange.declare(client, {name: "rcvr.ex", kind: "topic", durable: true})
   exchange.bind(client, {destination: "test.ex", key: "test", source: "rcvr.ex"})
@@ -35,7 +34,6 @@ export function setup() {
 }
 
 export function teardown(data) {
-  const client = new k9amqp.Client()
   let q = queue.declare(client, {name: 'test.q', passive: true})
   console.log('queue status: ', q)
   queue.purge(client, {name: "test.q"})
@@ -49,7 +47,8 @@ export function teardown(data) {
 }
 
 export default function() {
-  sleep(.5)
+  // jitter keeps VUs from running in lockstep (bursts of ~VUs concurrent requests)
+  sleep(0.4 + Math.random() * 0.2)
   client.publish(
   { exchange: "rcvr.ex", key: "test"},
   { content_type: "application/json",
