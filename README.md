@@ -79,6 +79,14 @@ Plugin version v0.0.7 k6 support:
 - ✅ a GitHub workflow with golangci-lint running on every pull request and every merge on the main branch
 - ✅ the xk6 topic set
 
+## Client
+
+`new k9amqp.Client(amqpOptions, poolOptions)` creates one AMQP client (connections + channel pool) shared by the whole k6 process, i.e. by all VUs including `setup()` and `teardown()`.
+
+- Create it once in the init context (top level of the script) and use that `client` everywhere: in `setup()`, VU functions and `teardown()`. There's no need to create it again inside `setup()`/`teardown()`.
+- Options of the first `new k9amqp.Client(...)` call win. Later calls return the same shared client and ignore their options; if those options differ, a warning is logged.
+- `client.teardown()` closes the shared connections, call it once in `teardown()`.
+
 ## Simple Sample
 
 ```javascript
@@ -105,12 +113,11 @@ const poolOptions = {
   channels_cache_size : __ENV.AMQP_CACHE_SIZE || 10,
 }
 
-// Inits K9 AMQP Client, Client is singleton object initialized only once for all VUs.
+// Inits K9 AMQP Client once in init context. It is a singleton shared by all VUs (incl. setup/teardown),
+// reuse this `client` everywhere, options of later `new k9amqp.Client(...)` calls are ignored.
 const client = new k9amqp.Client(amqpOptions, poolOptions)
 
 export function setup() {
-  // Gets already inited K9 AMQP Client
-  const client = new k9amqp.Client(amqpOptions, poolOptions)
   // Creates 'test.ex' exchange, 'test.q' queue and binds the queue to the exchange using 'test' routing key
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
@@ -119,7 +126,6 @@ export function setup() {
 
 // Cleans up
 export function teardown(data) {
-  const client = new k9amqp.Client()
   queue.delete(client, {name: "test.q"})
   exchange.delete(client, {name: 'test.ex'})
   client.teardown()
@@ -436,8 +442,6 @@ const unitMap = {
 };
 
 export function setup() {
-  // Gets already inited K9 AMQP Client
-  const client = new k9amqp.Client(amqpOptions, poolOptions)
   // Creates 'test.ex' exchange, 'test.q' queue and binds the queue to the exchange using 'test' routing key
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 3600000}})
@@ -446,7 +450,6 @@ export function setup() {
 
 // Cleans up
 export function teardown(data) {
-  const client = new k9amqp.Client()
   //queue.delete(client, {name: "test.q"})
   //exchange.delete(client, {name: 'test.ex'})
   client.teardown()

@@ -21,7 +21,7 @@ Main selling point vs. deprecated grafana/xk6-amqp: shared connection + channel 
 
 ## Key design facts (non-obvious)
 
-- **Global singleton**: `amqpClient` + `sync.Once` in `k9amqp.go` — one `AmqpClient` per k6 process, shared by all VUs. Options from the *first* `new Client(...)` win; later calls ignore their arguments (`new k9amqp.Client()` with no args is fine in setup/teardown).
+- **Global singleton**: `amqpClient` + `sync.Once` in `k9amqp.go` — one `AmqpClient` per k6 process, shared by all VUs. Options from the *first* `new Client(...)` win; later calls ignore their arguments, and `warnIgnoredOptions` logs a warning when the ignored options differ (passwords are never logged). Scripts create the client once at top level (init context) and reuse that `client` in `setup()`/`teardown()`, because k6 runs init code in the setup/teardown VU too. Don't re-create it there in examples/docs.
 - Pool sizing: `connections = channels_cache_size / channels_per_conn` (min 1). Defaults: `channels_per_conn=2`; host `localhost:5672`, vhost `/`, `guest/guest`.
 - Publisher confirms are **on by default** (opt-out via pool option `no_confirm: true`): `AmqpPool.channel()` puts every new channel in confirm mode; `publish()` uses `PublishWithDeferredConfirmWithContext` + `WaitContext`. A nack returns `ErrPublishNack` and the channel goes back to the pool (it isn't closed).
 - `data_sent`/`data_received` = bytes on the wire, counted globally by `countingConn` (wraps `net.Conn` via `amqp.Config.Dial` in `Connect()`, atomic counters on `AmqpClient`). The delta is pushed (`Swap(0)`) by whichever VU calls `Publish`/`Get`/`Consume`/`Teardown` next, so it isn't tracked per VU (on purpose). It includes `Listen` connections.

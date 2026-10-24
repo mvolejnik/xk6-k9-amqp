@@ -53,7 +53,26 @@ func (k9amqp *K9amqp) XClient(call sobek.ConstructorCall, rt *sobek.Runtime) *so
 	if err := client.init(*amqpOptions, *poolOptions); err != nil {
 		panic(rt.NewGoError(err))
 	}
+	warnIgnoredOptions(client.amqpClient, call.Arguments, *amqpOptions, *poolOptions)
 	return rt.ToValue(client).ToObject(rt)
+}
+
+// warnIgnoredOptions makes the singleton visible: the AMQP client is created by the first
+// `new Client(...)` only, options passed to later calls are ignored.
+func warnIgnoredOptions(amqpClient *AmqpClient, args []sobek.Value, amqpOptions AmqpOptions, poolOptions PoolOptions) {
+	if amqpClient == nil {
+		return
+	}
+	if len(args) >= 1 && amqpOptions != amqpClient.amqpOptions {
+		slog.Warn("AMQP client already initialized by the first 'new Client(...)', ignoring different amqpOptions (create the client once in init context and reuse it)",
+			"used", amqpClient.endpoint,
+			"ignored", fmt.Sprintf("amqp://%s@%s:%d/%s", amqpOptions.Username, amqpOptions.Host, amqpOptions.Port, amqpOptions.Vhost))
+	}
+	if len(args) >= 2 && poolOptions != amqpClient.poolOptions {
+		slog.Warn("AMQP client already initialized by the first 'new Client(...)', ignoring different poolOptions (create the client once in init context and reuse it)",
+			"used", fmt.Sprintf("%+v", amqpClient.poolOptions),
+			"ignored", fmt.Sprintf("%+v", poolOptions))
+	}
 }
 
 func (client *Client) getAmqpClient(amqpOptions AmqpOptions, poolOptions PoolOptions) (*AmqpClient, error) {

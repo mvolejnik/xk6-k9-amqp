@@ -28,6 +28,10 @@ interface ExchangeUnbindOptions { destination: string; source: string; key: stri
 // 2. Main Module
 declare module 'k6/x/k9amqp' {
   export class Client {
+    /**
+     * Creates the AMQP client shared by the k6 process.
+     * Create it once in init context and reuse it.
+     */
     constructor(amqpOptions?: AmqpOptions, poolOptions?: PoolOptions);
     publish(opts: PublishOptions, msg: Publishing): AmqpProduceResponse;
     get(opts: GetOptions): AmqpGetResponse;
