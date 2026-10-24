@@ -30,6 +30,28 @@ There is [Grafana xk6-amqp extensions](https://github.com/grafana/xk6-amqp), but
 
 How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote write](Prometheus.md)
 
+## Metrics
+
+| Metric | Type | Description |
+|---|---|---|
+| `amqp_pub_sent` | Counter | Successfully published messages |
+| `amqp_pub_failed` | Counter | Failed publishes (incl. broker nack) |
+| `amqp_pub_duration` | Trend (time) | Publish duration; with publisher confirms (default) it is the time until the broker confirms the message, with `no_confirm: true` just the time to write the message to the socket |
+| `amqp_sub_received` | Counter | Received messages (`get`, `consume`) |
+| `amqp_sub_no_delivery` | Counter | `get` / `consume` calls with no message available |
+| `amqp_sub_failed` | Counter | Failed `get` / `consume` calls |
+| `data_sent` / `data_received` | k6 builtin Counter (data) | Bytes on the wire of all AMQP connections (incl. protocol framing, heartbeats and `listen` connections). Counted globally, not per VU, so VU/scenario tags on these samples are not meaningful. |
+
+`amqp_*` metrics are tagged with `endpoint`, `exchange`, `routing_key` (and `scenario`). `listen` doesn't report `amqp_*` metrics.
+
+### Publisher confirms
+
+Publisher confirms are enabled by default, every `publish` waits for the broker ack. Disable them with pool option `no_confirm: true`:
+
+```javascript
+const client = new k9amqp.Client(amqpOptions, { channels_cache_size: 10, no_confirm: true })
+```
+
 ## K6 version compatibility
 
 Extension [build tested](https://github.com/mvolejnik/xk6-k9-amqp/actions?query=branch%3Amaster) with versions (but might build with other versions with no issue)
@@ -173,7 +195,7 @@ go build . && xk6 build latest --with xk6-k9-amqp=.
 ```
 
 ```sh
-$ ./build.sh 
+./build.sh 
 ```
 
 ```sh
@@ -297,7 +319,7 @@ sudo docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management-alpine
 ```
 
 ```sh
-INFO[0000] 2026/10/24 14:19:23 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10}
+INFO[0000] 2026/10/24 15:41:01 INFO init amqp client with pool {ChannelsPerConn:2 ChannelsCacheSize:10 NoConfirm:false}
 
          /\      Grafana   /‾‾/
     /\  /  \     |\  __   /  /  
@@ -313,47 +335,48 @@ INFO[0000] 2026/10/24 14:19:23 INFO init amqp client with pool {ChannelsPerConn:
      scenarios: (100.00%) 1 scenario, 10 max VUs, 1m0s max duration (incl. graceful stop):
               * default: 10 looping VUs for 30s (gracefulStop: 30s)
 
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO exchange created name=test.ex
-INFO[0000] 2026/10/24 14:19:23 INFO queue created name=test.q
-INFO[0000] 2026/10/24 14:19:23 INFO queue binded name=test.q key=test
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0000] 2026/10/24 14:19:23 INFO no available channel in pool, creating new one
-INFO[0030] 2026/10/24 14:19:53 INFO queue deleted name=test.q
-INFO[0030] 2026/10/24 14:19:53 INFO exchange deleted name=test.ex
-INFO[0030] 2026/10/24 14:19:53 INFO Teardown AMQP Client
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO exchange created name=test.ex
+INFO[0000] 2026/10/24 15:41:01 INFO queue created name=test.q
+INFO[0000] 2026/10/24 15:41:01 INFO queue binded name=test.q key=test
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0000] 2026/10/24 15:41:01 INFO no available channel in pool, creating new one
+INFO[0030] 2026/10/24 15:41:31 INFO queue deleted name=test.q 
+INFO[0030] 2026/10/24 15:41:31 INFO exchange deleted name=test.ex
+INFO[0030] 2026/10/24 15:41:31 INFO Teardown AMQP Client
 
 
   █ TOTAL RESULTS
 
     CUSTOM
-    amqp_pub_failed........: 0    0/s
-    amqp_pub_sent..........: 5780 192.298906/s
-    amqp_sub_failed........: 0    0/s
-    amqp_sub_no_delivery...: 5780 192.298906/s
-    amqp_sub_received......: 5780 192.298906/s
+    amqp_pub_duration......: avg=333.95µs min=81.5µs  med=329.18µs max=1.75ms  p(90)=424.87µs p(95)=463.02µs
+    amqp_pub_failed........: 0      0/s
+    amqp_pub_sent..........: 5740   191.059807/s
+    amqp_sub_failed........: 0      0/s
+    amqp_sub_no_delivery...: 5740   191.059807/s
+    amqp_sub_received......: 5740   191.059807/s
 
     EXECUTION
-    iteration_duration.....: avg=51.94ms min=50.9ms med=51.92ms max=55.26ms p(90)=52.42ms p(95)=52.52ms
-    iterations.............: 5780 192.298906/s
-    vus....................: 10   min=10       max=10
-    vus_max................: 10   min=10       max=10
+    iteration_duration.....: avg=52.26ms  min=51.39ms med=52.24ms  max=55.26ms p(90)=52.71ms  p(95)=52.84ms
+    iterations.............: 5740   191.059807/s
+    vus....................: 10     min=10       max=10
+    vus_max................: 10     min=10       max=10
 
     NETWORK
-    data_received..........: 0 B  0 B/s
-    data_sent..............: 0 B  0 B/s
+    data_received..........: 3.6 MB 121 kB/s
+    data_sent..............: 3.6 MB 121 kB/s
 
 
 
 
-running (0m30.1s), 00/10 VUs, 5780 complete and 0 interrupted iterations
+running (0m30.0s), 00/10 VUs, 5740 complete and 0 interrupted iterations
 default ✓ [======================================] 10 VUs  30s
 ```
 
@@ -480,7 +503,8 @@ function toSeconds(duration) {
 ```
 
 ```sh
-INFO[0000] 2026/10/24 14:21:20 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20} 
+
+INFO[0000] 2026/10/24 15:50:38 INFO init amqp client with pool {ChannelsPerConn:1 ChannelsCacheSize:20 NoConfirm:false} 
 
          /\      Grafana   /‾‾/  
     /\  /  \     |\  __   /  /   
@@ -497,35 +521,36 @@ INFO[0000] 2026/10/24 14:21:20 INFO init amqp client with pool {ChannelsPerConn:
               * consume: 2 looping VUs for 1m10s (exec: consume, gracefulStop: 30s)
               * publish: 333.33 iterations/s for 1m0s (maxVUs: 20-40, exec: produce, gracefulStop: 30s)
 
-INFO[0000] 2026/10/24 14:21:20 INFO no available channel in pool, creating new one 
-INFO[0000] 2026/10/24 14:21:20 INFO exchange created name=test.ex 
-INFO[0000] 2026/10/24 14:21:20 INFO queue created name=test.q 
-INFO[0000] 2026/10/24 14:21:20 INFO queue binded name=test.q key=test 
-INFO[0070] Consumer [1] consumed 10002 messages          source=console
-INFO[0070] Consumer [4] consumed 9999 messages           source=console
-INFO[0070] 2026/10/24 14:22:30 INFO Teardown AMQP Client 
+INFO[0000] 2026/10/24 15:50:38 INFO no available channel in pool, creating new one 
+INFO[0000] 2026/10/24 15:50:38 INFO exchange created name=test.ex 
+INFO[0000] 2026/10/24 15:50:38 INFO queue created name=test.q 
+INFO[0000] 2026/10/24 15:50:38 INFO queue binded name=test.q key=test 
+INFO[0070] Consumer [2] consumed 9997 messages           source=console
+INFO[0070] Consumer [13] consumed 10003 messages         source=console
+INFO[0070] 2026/10/24 15:51:48 INFO Teardown AMQP Client 
 
 
   █ TOTAL RESULTS 
 
     CUSTOM
+    amqp_pub_duration....: avg=218.34µs min=71.67µs med=209.85µs max=2.51ms p(90)=305.55µs p(95)=344.82µs
     amqp_pub_failed......: 0     0/s
-    amqp_pub_sent........: 20001 285.433799/s
+    amqp_pub_sent........: 20000 285.591729/s
 
     EXECUTION
-    iteration_duration...: avg=7.06ms min=16.8µs med=57.19µs max=1m10s p(90)=110.21µs p(95)=130.99µs
-    iterations...........: 20003 285.462341/s
+    iteration_duration...: avg=7.25ms   min=87.14µs med=243.95µs max=1m10s  p(90)=356.25µs p(95)=400.37µs
+    iterations...........: 20002 285.620289/s
     vus..................: 2     min=2        max=3 
     vus_max..............: 22    min=22       max=22
 
     NETWORK
-    data_received........: 0 B   0 B/s
-    data_sent............: 0 B   0 B/s
+    data_received........: 13 MB 179 kB/s
+    data_sent............: 12 MB 168 kB/s
 
 
 
 
-running (1m10.1s), 00/22 VUs, 20003 complete and 0 interrupted iterations
+running (1m10.0s), 00/22 VUs, 20002 complete and 0 interrupted iterations
 consume ✓ [======================================] 2 VUs      1m10s
 publish ✓ [======================================] 00/20 VUs  1m0s  333.33 iters/s
 ```

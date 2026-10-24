@@ -13,7 +13,7 @@ Main selling point vs. deprecated grafana/xk6-amqp: shared connection + channel 
 | `amqp.go` | `AmqpClient` (connections) + `AmqpPool` (buffered chan of `*amqp.Channel`, round-robin over connections), option defaults (`init()`), `Connect()`. |
 | `queue.go` / `exchange.go` | Declare/Delete/Bind/Unbind(/Purge) — each takes `(client *Client, opts XxxOptions)`. |
 | `types.go` | All option/response structs. |
-| `metrics.go` | k6 metrics: `amqp_pub_sent`, `amqp_pub_failed`, `amqp_pub_latency` (Trend), `amqp_sub_received`, `amqp_sub_no_delivery`, `amqp_sub_failed`, `amqp_sub_latency` (Trend). Latency trends are registered but currently never pushed. Tags: `endpoint`, `exchange`, `routing_key`, `scenario`. |
+| `metrics.go` | k6 metrics: `amqp_pub_sent`, `amqp_pub_failed`, `amqp_pub_duration` (Trend, Time), `amqp_sub_received`, `amqp_sub_no_delivery`, `amqp_sub_failed`. No subscriber duration (by design). Tags: `endpoint`, `exchange`, `routing_key`, `scenario`. Builtin `data_sent`/`data_received` are also pushed (see below). |
 | `index.d.ts` + `package.json` | Hand-written TypeScript typings for the JS API — **update when changing Go API/types**. |
 | `examples/*.js` | Runnable k6 scripts (`simple.js` is the CI smoke test). Keep in sync with API. |
 | `docker/` | `k6-test` (CI: RabbitMQ + locally built k6), `k6-test-release` (published image `mvolejnik/k6-with-amqp`), `k6-test-with-grafana` (Prometheus/Grafana, see `Prometheus.md`), `k6-with-amqp` (release image Dockerfile). |
@@ -23,6 +23,9 @@ Main selling point vs. deprecated grafana/xk6-amqp: shared connection + channel 
 
 - **Global singleton**: `amqpClient` + `sync.Once` in `k9amqp.go` — one `AmqpClient` per k6 process, shared by all VUs. Options from the *first* `new Client(...)` win; later calls ignore their arguments (`new k9amqp.Client()` with no args is fine in setup/teardown).
 - Pool sizing: `connections = channels_cache_size / channels_per_conn` (min 1). Defaults: `channels_per_conn=2`; host `localhost:5672`, vhost `/`, `guest/guest`.
+- Publisher confirms are **on by default** (opt-out via pool option `no_confirm: true`): `AmqpPool.channel()` puts every new channel in confirm mode; `publish()` uses `PublishWithDeferredConfirmWithContext` + `WaitContext`. A nack returns `ErrPublishNack` and the channel goes back to the pool (it isn't closed).
+- `data_sent`/`data_received` = bytes on the wire, counted globally by `countingConn` (wraps `net.Conn` via `amqp.Config.Dial` in `Connect()`, atomic counters on `AmqpClient`). The delta is pushed (`Swap(0)`) by whichever VU calls `Publish`/`Get`/`Consume`/`Teardown` next, so it isn't tracked per VU (on purpose). It includes `Listen` connections.
+- Metric helpers: `endpointTags` (nil outside VU context, so it skips pushing), `sample`, `push`. `Listen` has no metrics (on purpose).
 - Channel lifecycle pattern (copy-pasted in every op): `channels.get()` → op → `defer`: on success `put()` back to pool (closed if pool full), on error `channel.Close()`. Keep this pattern for new ops.
 - `Listen` is the exception: opens its **own** connection+channel and consumes in a goroutine; returning an error from the JS listener stops it.
 - `Consume` is non-blocking: drains up to `opts.Size` already-buffered deliveries, then cancels the consumer.

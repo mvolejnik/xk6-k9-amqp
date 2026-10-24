@@ -3,16 +3,24 @@ package k9amqp
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const connectionTimeout = 30 * time.Second
+
 type AmqpClient struct {
-	amqpOptions AmqpOptions
-	poolOptions PoolOptions
-	connections []*amqp.Connection
-	channels    AmqpPool
+	amqpOptions   AmqpOptions
+	poolOptions   PoolOptions
+	connections   []*amqp.Connection
+	channels      AmqpPool
+	endpoint      string
+	bytesSent     atomic.Int64
+	bytesReceived atomic.Int64
 }
 
 type AmqpPool struct {
@@ -21,6 +29,25 @@ type AmqpPool struct {
 	mutex       sync.Mutex
 	nextId      int
 	connIdx     int
+	confirm     bool
+}
+
+// countingConn counts bytes on the wire of all AMQP connections (global, not per VU).
+type countingConn struct {
+	net.Conn
+	sent, received *atomic.Int64
+}
+
+func (c *countingConn) Read(b []byte) (int, error) {
+	n, err := c.Conn.Read(b)
+	c.received.Add(int64(n))
+	return n, err
+}
+
+func (c *countingConn) Write(b []byte) (int, error) {
+	n, err := c.Conn.Write(b)
+	c.sent.Add(int64(n))
+	return n, err
 }
 
 func (opt *AmqpOptions) init() {
@@ -73,6 +100,14 @@ func (p *AmqpPool) channel() (*amqp.Channel, error) {
 	if err != nil {
 		return nil, err
 	}
+	if p.confirm {
+		if err := channel.Confirm(false); err != nil {
+			if closeErr := channel.Close(); closeErr != nil {
+				slog.Error("failed to close channel", "error", closeErr)
+			}
+			return nil, err
+		}
+	}
 	return channel, nil
 }
 
@@ -113,7 +148,9 @@ func (amqpClient *AmqpClient) init() error {
 	amqpClient.connections = connections
 	amqpClient.channels = AmqpPool{
 		connections: connections,
-		pool:        make(chan *amqp.Channel, amqpClient.poolOptions.ChannelsCacheSize)}
+		pool:        make(chan *amqp.Channel, amqpClient.poolOptions.ChannelsCacheSize),
+		confirm:     !amqpClient.poolOptions.NoConfirm}
+	amqpClient.endpoint = fmt.Sprintf("amqp://%s@%s:%d/%s", amqpClient.amqpOptions.Username, amqpClient.amqpOptions.Host, amqpClient.amqpOptions.Port, amqpClient.amqpOptions.Vhost)
 	return nil
 }
 
@@ -135,6 +172,13 @@ func (amqpClient *AmqpClient) Connect() (*amqp.Connection, error) {
 	amqpConfig := amqp.Config{
 		Vhost:      amqpClient.amqpOptions.Vhost,
 		Properties: amqp.NewConnectionProperties(),
+		Dial: func(network, addr string) (net.Conn, error) {
+			conn, err := amqp.DefaultDial(connectionTimeout)(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			return &countingConn{Conn: conn, sent: &amqpClient.bytesSent, received: &amqpClient.bytesReceived}, nil
+		},
 	}
 	var amqpUrl = fmt.Sprintf("amqp://%s:%s@%s:%d", amqpClient.amqpOptions.Username, amqpClient.amqpOptions.Password, amqpClient.amqpOptions.Host, amqpClient.amqpOptions.Port)
 	conn, err := amqp.DialConfig(amqpUrl, amqpConfig)
