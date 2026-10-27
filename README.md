@@ -40,6 +40,7 @@ How to send metrics to Prometheus see [K6 K9-AMQP extension prometheus remote wr
 | `amqp_sub_received` | Counter | Received messages (`get`, `consume`) |
 | `amqp_sub_no_delivery` | Counter | `get` / `consume` calls with no message available |
 | `amqp_sub_failed` | Counter | Failed `get` / `consume` calls |
+| `amqp_pool_wait_duration` | Trend (time) | Time `publish` / `get` / `consume` spent borrowing a channel from the pool: opening a new channel when none is idle, and waiting for a free one with `bounded: true` |
 | `data_sent` / `data_received` | k6 builtin Counter (data) | Bytes on the wire of all AMQP connections (incl. protocol framing, heartbeats and `listen` connections). Counted globally, not per VU, so VU/scenario tags on these samples are not meaningful. |
 
 `amqp_*` metrics are tagged with `endpoint`, `exchange`, `routing_key` (and `scenario`). `listen` doesn't report `amqp_*` metrics.
@@ -51,6 +52,16 @@ Publisher confirms are enabled by default, every `publish` waits for the broker 
 ```javascript
 const client = new k9amqp.Client(amqpOptions, { channels_cache_size: 10, no_confirm: true })
 ```
+
+### Channel pool
+
+The pool keeps up to `channels_cache_size` idle channels over `channels_cache_size / channels_per_conn` connections (min 1). When no idle channel is available a new one is opened, and a returned channel is closed when the pool is full. So when more VUs need a channel at the same moment than `channels_cache_size`, channels are opened and closed (channel churn). Size the pool to the peak concurrency, avoid VUs running in lockstep (e.g. add jitter to `sleep`), or bound the pool:
+
+```javascript
+const client = new k9amqp.Client(amqpOptions, { channels_cache_size: 50, bounded: true })
+```
+
+With `bounded: true` there are never more than `channels_cache_size` channels open (idle + in use), a VU waits for a free channel instead of opening a new one. The wait isn't included in `amqp_pub_duration`, it's measured by `amqp_pool_wait_duration`. Channels held by unsettled manual-ack deliveries count against the limit. `channels_cache_size: 0` (default) means no channel caching at all, every operation opens and closes a channel.
 
 ## K6 version compatibility
 
@@ -79,6 +90,31 @@ Plugin version v0.0.7 k6 support:
 - ✅ a GitHub workflow with golangci-lint running on every pull request and every merge on the main branch
 - ✅ the xk6 topic set
 
+## Client
+
+`new k9amqp.Client(amqpOptions, poolOptions)` creates one AMQP client (connections + channel pool) shared by the whole k6 process, i.e. by all VUs including `setup()` and `teardown()`.
+
+- Create it once in the init context (top level of the script) and use that `client` everywhere: in `setup()`, VU functions and `teardown()`. There's no need to create it again inside `setup()`/`teardown()`.
+- Options of the first `new k9amqp.Client(...)` call win. Later calls return the same shared client and ignore their options; if those options differ, a warning is logged.
+- `client.teardown()` closes the shared connections, call it once in `teardown()`.
+
+### Manual ack
+
+With `auto_ack: false`, every delivery returned by `get` / `consume` (and passed to a `listen` listener) has `ack(multiple)`, `nack(multiple, requeue)` and `reject(requeue)` methods:
+
+```javascript
+const res = client.get({queue: "test.q", auto_ack: false})
+if (res.ok) {
+  res.delivery.ack(false)       // or res.delivery.nack(false, true) / res.delivery.reject(true)
+}
+```
+
+The channel used by `get` / `consume` is kept out of the pool until all its deliveries are acked, nacked or rejected, then it's returned to the pool. Settle every delivery, otherwise the messages stay unacked (and the channel open) until `client.teardown()` closes the connections and the broker requeues them.
+
+### Listen
+
+`client.listen(opts, listener)` opens its own connection and channel and calls `listener` for every delivery in the background. The listener stops when the listener returns an error, or when the VU is done (end of its scenario). Connections of listeners still running are closed by `client.teardown()`. Every `listen` call opens a new connection, so call it once per VU, not in every iteration of a long scenario.
+
 ## Simple Sample
 
 ```javascript
@@ -105,12 +141,11 @@ const poolOptions = {
   channels_cache_size : __ENV.AMQP_CACHE_SIZE || 10,
 }
 
-// Inits K9 AMQP Client, Client is singleton object initialized only once for all VUs.
+// Inits K9 AMQP Client once in init context. It is a singleton shared by all VUs (incl. setup/teardown),
+// reuse this `client` everywhere, options of later `new k9amqp.Client(...)` calls are ignored.
 const client = new k9amqp.Client(amqpOptions, poolOptions)
 
 export function setup() {
-  // Gets already inited K9 AMQP Client
-  const client = new k9amqp.Client(amqpOptions, poolOptions)
   // Creates 'test.ex' exchange, 'test.q' queue and binds the queue to the exchange using 'test' routing key
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 300000}})
@@ -119,7 +154,6 @@ export function setup() {
 
 // Cleans up
 export function teardown(data) {
-  const client = new k9amqp.Client()
   queue.delete(client, {name: "test.q"})
   exchange.delete(client, {name: 'test.ex'})
   client.teardown()
@@ -148,7 +182,7 @@ export default function() {
 ## Build K6 with K9 AMQP extension
 
 ```sh
-xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.5
+xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.6
 ```
 
 ```sh
@@ -157,13 +191,13 @@ xk6 build latest --with github.com/mvolejnik/xk6-k9-amqp@v0.1.5
 3:54PM INF Creating k6 main
 3:54PM INF adding dependency go.k6.io/k6/v2@v2.3.0
 3:54PM INF importing extensions
-3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.5
+3:54PM INF adding dependency github.com/mvolejnik/xk6-k9-amqp@v0.1.6
 3:54PM INF Building k6
 3:54PM INF Build complete
 3:54PM INF Cleaning up work directory /tmp/k6foundry768369310
 3:54PM INF Successful build platform=linux/amd64
 3:54PM INF added module=go.k6.io/k6/v2 version=v2.3.0
-3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.5
+3:54PM INF added module=github.com/mvolejnik/xk6-k9-amqp version=v0.1.6
 3:54PM INF A new binary has been built based on k6 version=v2.3.0
 
 xk6 has now produced a new k6 binary which may be different than the command on your system path!
@@ -436,8 +470,6 @@ const unitMap = {
 };
 
 export function setup() {
-  // Gets already inited K9 AMQP Client
-  const client = new k9amqp.Client(amqpOptions, poolOptions)
   // Creates 'test.ex' exchange, 'test.q' queue and binds the queue to the exchange using 'test' routing key
   exchange.declare(client, {name: "test.ex", kind: "topic", durable: true})
   queue.declare(client, {name: "test.q", durable: true, args: {"x-message-ttl": 3600000}})
@@ -446,7 +478,6 @@ export function setup() {
 
 // Cleans up
 export function teardown(data) {
-  const client = new k9amqp.Client()
   //queue.delete(client, {name: "test.q"})
   //exchange.delete(client, {name: 'test.ex'})
   client.teardown()
