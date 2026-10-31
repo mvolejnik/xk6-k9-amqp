@@ -3,7 +3,7 @@ module github.com/mvolejnik/xk6-k9-amqp
 go 1.26.0
 
 require (
-	github.com/grafana/sobek v0.0.0-20261021132036-87a47258b7dc
+	github.com/grafana/sobek v0.0.0-20261031082357-c1e3e36bfbc3
 	github.com/rabbitmq/amqp091-go v1.16.0
 	go.k6.io/k6/v2 v2.3.0
 )
@@ -13,7 +13,7 @@ replace github.com/mvolejnik/xk6-k9-amqp/k9amqp => ./k9amqp
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/dlclark/regexp2/v2 v2.9.1 // indirect
+	github.com/dlclark/regexp2/v2 v2.11.0 // indirect
 	github.com/evanw/esbuild v0.28.2 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
