@@ -15,6 +15,7 @@ type (
 		ChannelsPerConn   int
 		ChannelsCacheSize int
 		NoConfirm         bool
+		Bounded           bool
 	}
 
 	Queue struct {

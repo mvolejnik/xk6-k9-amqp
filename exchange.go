@@ -10,7 +10,7 @@ func (queue *Exchange) Declare(client *Client, opts ExchangeDeclareOptions) erro
 	if client == nil {
 		return errors.New("required 'client' parameter missing")
 	}
-	channel, err := client.amqpClient.channels.get()
+	channel, err := client.amqpClient.channels.get(client.k9amqp.vu.Context())
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
@@ -48,7 +48,7 @@ func (queue *Exchange) Delete(client *Client, opts ExchangeDeleteOptions) error 
 	if client == nil {
 		return errors.New("required 'client' parameter missing")
 	}
-	channel, err := client.amqpClient.channels.get()
+	channel, err := client.amqpClient.channels.get(client.k9amqp.vu.Context())
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
@@ -81,7 +81,7 @@ func (exchange *Exchange) Bind(client *Client, opts ExchangeBindOptions) error {
 	if client == nil {
 		return errors.New("required 'client' parameter missing")
 	}
-	channel, err := client.amqpClient.channels.get()
+	channel, err := client.amqpClient.channels.get(client.k9amqp.vu.Context())
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err
@@ -113,7 +113,7 @@ func (exchange *Exchange) Unbind(client *Client, opts ExchangeUnbindOptions) err
 	if client == nil {
 		return errors.New("required 'client' parameter missing")
 	}
-	channel, err := client.amqpClient.channels.get()
+	channel, err := client.amqpClient.channels.get(client.k9amqp.vu.Context())
 	if err != nil {
 		slog.Error("unable to get amqp channel")
 		return err

@@ -3,9 +3,14 @@
 // 1. Standalone/Global Types (No 'export' at the root level)
 interface Table { [key: string]: any; }
 interface AmqpOptions { host?: string; port?: number; vhost?: string; username?: string; password?: string; }
-interface PoolOptions { channels_per_conn?: number; channels_cache_size?: number; no_confirm?: boolean; }
+interface PoolOptions { channels_per_conn?: number; channels_cache_size?: number; no_confirm?: boolean; bounded?: boolean; }
 interface Publishing { content_type?: string; content_encoding?: string; delivery_mode?: number; priority?: number; correlation_id?: string; reply_to?: string; expiration?: string; message_id?: string; timestamp?: Date; type?: string; user_id?: string; app_id?: string; headers?: Table; body: string | ArrayBuffer; }
-interface Delivery { Acknowledger: any; Headers: Table; ContentType: string; ContentEncoding: string; DeliveryMode: number; Priority: number; CorrelationId: string; ReplyTo: string; Expiration: string; MessageId: string; Timestamp: Date; Type: string; UserId: string; AppId: string; ConsumerTag: string; MessageCount: number; DeliveryTag: number; Redelivered: boolean; Exchange: string; RoutingKey: string; Body: string | ArrayBuffer; }
+interface Delivery { Acknowledger: any; Headers: Table; ContentType: string; ContentEncoding: string; DeliveryMode: number; Priority: number; CorrelationId: string; ReplyTo: string; Expiration: string; MessageId: string; Timestamp: Date; Type: string; UserId: string; AppId: string; ConsumerTag: string; MessageCount: number; DeliveryTag: number; Redelivered: boolean; Exchange: string; RoutingKey: string; Body: string | ArrayBuffer;
+  /** Manual ack (auto_ack: false). Channel returns to the pool once all its deliveries are settled. */
+  ack(multiple: boolean): void;
+  nack(multiple: boolean, requeue: boolean): void;
+  reject(requeue: boolean): void;
+}
 interface PublishOptions { exchange: string; key: string; mandatory?: boolean; immediate?: boolean; }
 interface AmqpProduceResponse { Error: boolean; ErrorMessage: string; }
 interface GetOptions { queue: string; auto_ack: boolean; }
@@ -28,6 +33,10 @@ interface ExchangeUnbindOptions { destination: string; source: string; key: stri
 // 2. Main Module
 declare module 'k6/x/k9amqp' {
   export class Client {
+    /**
+     * Creates the AMQP client shared by the k6 process.
+     * Create it once in init context and reuse it.
+     */
     constructor(amqpOptions?: AmqpOptions, poolOptions?: PoolOptions);
     publish(opts: PublishOptions, msg: Publishing): AmqpProduceResponse;
     get(opts: GetOptions): AmqpGetResponse;

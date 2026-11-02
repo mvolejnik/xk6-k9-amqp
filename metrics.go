@@ -12,6 +12,7 @@ type amqpMetrics struct {
 	ConsumeReceived   *metrics.Metric
 	ConsumeNoDelivery *metrics.Metric
 	ConsumeFailed     *metrics.Metric
+	PoolWaitDuration  *metrics.Metric
 }
 
 func registerMetrics(vu modules.VU) (amqpMetrics, error) {
@@ -39,6 +40,10 @@ func registerMetrics(vu modules.VU) (amqpMetrics, error) {
 		return m, err
 	}
 	m.ConsumeFailed, err = registry.NewMetric("amqp_sub_failed", metrics.Counter)
+	if err != nil {
+		return m, err
+	}
+	m.PoolWaitDuration, err = registry.NewMetric("amqp_pool_wait_duration", metrics.Trend, metrics.Time)
 	if err != nil {
 		return m, err
 	}
